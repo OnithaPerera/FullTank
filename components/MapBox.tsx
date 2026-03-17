@@ -35,16 +35,25 @@ function timeAgo(dateString: string) {
   return `${Math.round(diffHrs / 24)}d ago`;
 }
 
-function LocationCenterer({ userLoc }: { userLoc: { lat: number, lng: number } | null }) {
+// Updated to accept recenterTrigger
+function LocationCenterer({ userLoc, recenterTrigger }: { userLoc: { lat: number, lng: number } | null, recenterTrigger: number }) {
   const map = useMap();
   const [hasCentered, setHasCentered] = useState(false);
 
+  // Initial load centering
   useEffect(() => {
     if (userLoc && !hasCentered) {
       map.flyTo([userLoc.lat, userLoc.lng], 14, { animate: true, duration: 1.5 });
       setHasCentered(true);
     }
   }, [userLoc, hasCentered, map]);
+
+  // Center when the locate button is clicked
+  useEffect(() => {
+    if (userLoc && recenterTrigger > 0) {
+      map.flyTo([userLoc.lat, userLoc.lng], 15, { animate: true, duration: 1.0 });
+    }
+  }, [recenterTrigger, userLoc, map]);
 
   return null;
 }
@@ -63,7 +72,8 @@ function MapBoundsTracker({ setStations }: { setStations: any }) {
   return null;
 }
 
-export default function MapBox({ activeFilter, isDark }: { activeFilter: string, isDark: boolean }) {
+// Added recenterTrigger prop
+export default function MapBox({ activeFilter, isDark, recenterTrigger }: { activeFilter: string, isDark: boolean, recenterTrigger: number }) {
   const [stations, setStations] = useState<any[]>([]);
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [interactedStations, setInteractedStations] = useState<string[]>([]);
@@ -150,7 +160,8 @@ export default function MapBox({ activeFilter, isDark }: { activeFilter: string,
           : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"} 
       />
       
-      <LocationCenterer userLoc={userLoc} />
+      {/* Passing recenterTrigger here */}
+      <LocationCenterer userLoc={userLoc} recenterTrigger={recenterTrigger} />
       <MapBoundsTracker setStations={setStations} />
 
       {userLoc && (
@@ -159,7 +170,6 @@ export default function MapBox({ activeFilter, isDark }: { activeFilter: string,
         </Marker>
       )}
 
-      {/* Markers rendered directly without clustering */}
       {stations.map((station) => {
         let isAvailable = false;
         if (activeFilter === 'all') {
