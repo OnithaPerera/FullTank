@@ -1,6 +1,7 @@
 'use client';
 
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEffect, useState } from 'react';
@@ -35,7 +36,6 @@ function timeAgo(dateString: string) {
   return `${Math.round(diffHrs / 24)}d ago`;
 }
 
-// 1. New component to smoothly fly to the user's location
 function LocationCenterer({ userLoc }: { userLoc: { lat: number, lng: number } | null }) {
   const map = useMap();
   const [hasCentered, setHasCentered] = useState(false);
@@ -151,7 +151,6 @@ export default function MapBox({ activeFilter, isDark }: { activeFilter: string,
           : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"} 
       />
       
-      {/* 2. Add the invisible component that listens for user location */}
       <LocationCenterer userLoc={userLoc} />
       <MapBoundsTracker setStations={setStations} />
 
@@ -161,127 +160,126 @@ export default function MapBox({ activeFilter, isDark }: { activeFilter: string,
         </Marker>
       )}
 
-      {stations.map((station) => {
-        let isAvailable = false;
-        if (activeFilter === 'all') {
-          isAvailable = station.has_92 || station.has_95 || station.has_diesel;
-        } else {
-          isAvailable = station[`has_${activeFilter}`];
-          if (!isAvailable) return null;
-        }
+      <MarkerClusterGroup chunkedLoading maxClusterRadius={40}>
+        {stations.map((station) => {
+          let isAvailable = false;
+          if (activeFilter === 'all') {
+            isAvailable = station.has_92 || station.has_95 || station.has_diesel;
+          } else {
+            isAvailable = station[`has_${activeFilter}`];
+            if (!isAvailable) return null;
+          }
 
-        let currentIcon = redIcon;
-        if (isAvailable) {
-          if (station.confirms >= 3) currentIcon = greenIcon;
-          else currentIcon = yellowIcon; 
-        }
+          let currentIcon = redIcon;
+          if (isAvailable) {
+            if (station.confirms >= 3) currentIcon = greenIcon;
+            else currentIcon = yellowIcon; 
+          }
 
-        const distanceStr = userLoc ? `${calculateDistance(userLoc.lat, userLoc.lng, station.lat, station.lng)} km` : '...';
-        
-        // Using the official Google Maps Directions URL parameters
-        const gMapsLink = `https://www.google.com/maps/dir/?api=1&destination=${station.lat},${station.lng}`;
-        
-        const hasInteracted = interactedStations.includes(station.id);
-        const displayTime = station.confirms === 0 ? 'No updates' : timeAgo(station.last_updated);
-        const isEditing = editingId === station.id;
+          const distanceStr = userLoc ? `${calculateDistance(userLoc.lat, userLoc.lng, station.lat, station.lng)} km` : '...';
+          const gMapsLink = `https://www.google.com/maps/dir/?api=1&destination=${station.lat},${station.lng}`;
+          const hasInteracted = interactedStations.includes(station.id);
+          const displayTime = station.confirms === 0 ? 'No updates' : timeAgo(station.last_updated);
+          const isEditing = editingId === station.id;
 
-        return (
-          <Marker key={station.id} position={[station.lat, station.lng]} icon={currentIcon}>
-            <Popup className="custom-popup">
-              <div className="flex flex-col w-[250px] font-sans">
-                
-                <div className="mb-3">
-                  <h3 className="text-gray-900 text-lg font-bold m-0 leading-tight">{station.name}</h3>
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="flex items-center text-red-600 font-semibold text-xs"><MapPin size={12} className="mr-1" /> {distanceStr}</span>
-                    <span className="flex items-center text-gray-500 font-medium text-xs"><Clock size={12} className="mr-1" /> {displayTime}</span>
-                  </div>
-                </div>
-
-                {isEditing ? (
-                  <div className="border-t border-gray-200 pt-3">
-                    <p className="text-xs font-bold text-gray-700 mb-2">Update Availability:</p>
-                    <div className="flex flex-col gap-2 mb-3">
-                      <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditForm({...editForm, has_92: !editForm.has_92})}} className={`px-3 py-2 rounded-md text-white text-sm font-semibold ${editForm.has_92 ? 'bg-green-600' : 'bg-red-600'}`}>92 Octane: {editForm.has_92 ? 'Yes' : 'No'}</button>
-                      <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditForm({...editForm, has_95: !editForm.has_95})}} className={`px-3 py-2 rounded-md text-white text-sm font-semibold ${editForm.has_95 ? 'bg-green-600' : 'bg-red-600'}`}>95 Octane: {editForm.has_95 ? 'Yes' : 'No'}</button>
-                      <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditForm({...editForm, has_diesel: !editForm.has_diesel})}} className={`px-3 py-2 rounded-md text-white text-sm font-semibold ${editForm.has_diesel ? 'bg-green-600' : 'bg-red-600'}`}>Diesel: {editForm.has_diesel ? 'Yes' : 'No'}</button>
-                    </div>
-                    
-                    <p className="text-xs font-bold text-gray-700 mb-1">Queue Length:</p>
-                    <select 
-                      value={editForm.queue_length} 
-                      onChange={(e) => setEditForm({...editForm, queue_length: e.target.value})}
-                      onClick={(e) => e.stopPropagation()}
-                      className="w-full border border-gray-300 rounded p-1 mb-3 text-sm text-gray-900 bg-white"
-                    >
-                      <option value="Unknown">Unknown</option>
-                      <option value="Short (0-15m)">Short (0-15m)</option>
-                      <option value="Medium (15-45m)">Medium (15-45m)</option>
-                      <option value="Long (45m+)">Long (45m+)</option>
-                    </select>
-
-                    <div className="flex gap-2">
-                      <button type="button" onClick={(e) => submitUpdate(e, station.id)} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 rounded font-bold">Save</button>
-                      <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingId(null); }} className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs py-2 rounded font-bold">Cancel</button>
+          return (
+            <Marker key={station.id} position={[station.lat, station.lng]} icon={currentIcon}>
+              <Popup className="custom-popup">
+                <div className="flex flex-col w-[250px] font-sans">
+                  
+                  <div className="mb-3">
+                    <h3 className="text-gray-900 text-lg font-bold m-0 leading-tight">{station.name}</h3>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="flex items-center text-red-600 font-semibold text-xs"><MapPin size={12} className="mr-1" /> {distanceStr}</span>
+                      <span className="flex items-center text-gray-500 font-medium text-xs"><Clock size={12} className="mr-1" /> {displayTime}</span>
                     </div>
                   </div>
-                ) : (
-                  <>
-                    <a href={gMapsLink} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-white text-sm py-2 rounded-md font-bold transition-colors mb-3 no-underline">
-                      <Map size={16} className="mr-2" /> Open in Google Maps
-                    </a>
 
-                    <div className="bg-gray-50 rounded p-2 mb-3 border border-gray-100 flex items-center justify-between">
-                      <span className="text-xs font-semibold text-gray-600 flex items-center"><Users size={14} className="mr-1"/> Queue:</span>
-                      <span className="text-xs font-bold text-gray-900">{station.queue_length || 'Unknown'}</span>
-                    </div>
-
+                  {isEditing ? (
                     <div className="border-t border-gray-200 pt-3">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-gray-500 text-xs font-medium">Community Status:</span>
-                        {station.confirms >= 3 ? (
-                           <span className="flex items-center text-green-600 font-bold text-xs"><CheckCircle size={12} className="mr-1"/> Verified</span>
-                        ) : (
-                           <span className="flex items-center text-yellow-600 font-bold text-xs"><AlertTriangle size={12} className="mr-1"/> Pending ({station.confirms}/3)</span>
-                        )}
+                      <p className="text-xs font-bold text-gray-700 mb-2">Update Availability:</p>
+                      <div className="flex flex-col gap-2 mb-3">
+                        <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditForm({...editForm, has_92: !editForm.has_92})}} className={`px-3 py-2 rounded-md text-white text-sm font-semibold ${editForm.has_92 ? 'bg-green-600' : 'bg-red-600'}`}>92 Octane: {editForm.has_92 ? 'Yes' : 'No'}</button>
+                        <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditForm({...editForm, has_95: !editForm.has_95})}} className={`px-3 py-2 rounded-md text-white text-sm font-semibold ${editForm.has_95 ? 'bg-green-600' : 'bg-red-600'}`}>95 Octane: {editForm.has_95 ? 'Yes' : 'No'}</button>
+                        <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditForm({...editForm, has_diesel: !editForm.has_diesel})}} className={`px-3 py-2 rounded-md text-white text-sm font-semibold ${editForm.has_diesel ? 'bg-green-600' : 'bg-red-600'}`}>Diesel: {editForm.has_diesel ? 'Yes' : 'No'}</button>
                       </div>
                       
-                      <div className="flex flex-col gap-2 mb-3">
-                        <div className={`flex items-center justify-between px-3 py-1.5 rounded-md text-white text-sm font-semibold ${station.has_92 ? 'bg-green-600' : 'bg-red-600'}`}>
-                          <span>92 Octane</span> <span>{station.has_92 ? 'Available' : 'Empty'}</span>
-                        </div>
-                        <div className={`flex items-center justify-between px-3 py-1.5 rounded-md text-white text-sm font-semibold ${station.has_95 ? 'bg-green-600' : 'bg-red-600'}`}>
-                          <span>95 Octane</span> <span>{station.has_95 ? 'Available' : 'Empty'}</span>
-                        </div>
-                        <div className={`flex items-center justify-between px-3 py-1.5 rounded-md text-white text-sm font-semibold ${station.has_diesel ? 'bg-green-600' : 'bg-red-600'}`}>
-                          <span>Diesel</span> <span>{station.has_diesel ? 'Available' : 'Empty'}</span>
-                        </div>
-                      </div>
-
-                      <button 
-                        type="button" 
-                        onClick={(e) => openUpdateForm(e, station)} 
-                        className={`w-full flex items-center justify-center mb-2 border text-xs py-2 rounded-md font-bold transition-colors bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100`}
+                      <p className="text-xs font-bold text-gray-700 mb-1">Queue Length:</p>
+                      <select 
+                        value={editForm.queue_length} 
+                        onChange={(e) => setEditForm({...editForm, queue_length: e.target.value})}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full border border-gray-300 rounded p-1 mb-3 text-sm text-gray-900 bg-white"
                       >
-                        <Edit3 size={14} className="mr-1" /> Update Station Data
-                      </button>
+                        <option value="Unknown">Unknown</option>
+                        <option value="Short (0-15m)">Short (0-15m)</option>
+                        <option value="Medium (15-45m)">Medium (15-45m)</option>
+                        <option value="Long (45m+)">Long (45m+)</option>
+                      </select>
 
                       <div className="flex gap-2">
-                        <button type="button" onClick={(e) => confirmFuel(e, station.id, station.confirms)} disabled={hasInteracted} className={`flex-1 flex items-center justify-center border text-xs py-1.5 rounded-md font-semibold transition-colors ${hasInteracted ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}>
-                          <CheckCircle size={14} className="mr-1" /> Confirm
-                        </button>
-                        <button type="button" onClick={(e) => reportFalseInfo(e, station.id)} disabled={hasInteracted} className={`flex-1 flex items-center justify-center border text-xs py-1.5 rounded-md font-semibold transition-colors ${hasInteracted ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed' : 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100'}`}>
-                          <AlertTriangle size={14} className="mr-1" /> Fake
-                        </button>
+                        <button type="button" onClick={(e) => submitUpdate(e, station.id)} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 rounded font-bold">Save</button>
+                        <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingId(null); }} className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs py-2 rounded font-bold">Cancel</button>
                       </div>
                     </div>
-                  </>
-                )}
-              </div>
-            </Popup>
-          </Marker>
-        );
-      })}
+                  ) : (
+                    <>
+                      <a href={gMapsLink} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-white text-sm py-2 rounded-md font-bold transition-colors mb-3 no-underline">
+                        <Map size={16} className="mr-2" /> Open in Google Maps
+                      </a>
+
+                      <div className="bg-gray-50 rounded p-2 mb-3 border border-gray-100 flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-600 flex items-center"><Users size={14} className="mr-1"/> Queue:</span>
+                        <span className="text-xs font-bold text-gray-900">{station.queue_length || 'Unknown'}</span>
+                      </div>
+
+                      <div className="border-t border-gray-200 pt-3">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-gray-500 text-xs font-medium">Community Status:</span>
+                          {station.confirms >= 3 ? (
+                             <span className="flex items-center text-green-600 font-bold text-xs"><CheckCircle size={12} className="mr-1"/> Verified</span>
+                          ) : (
+                             <span className="flex items-center text-yellow-600 font-bold text-xs"><AlertTriangle size={12} className="mr-1"/> Pending ({station.confirms}/3)</span>
+                          )}
+                        </div>
+                        
+                        <div className="flex flex-col gap-2 mb-3">
+                          <div className={`flex items-center justify-between px-3 py-1.5 rounded-md text-white text-sm font-semibold ${station.has_92 ? 'bg-green-600' : 'bg-red-600'}`}>
+                            <span>92 Octane</span> <span>{station.has_92 ? 'Available' : 'Empty'}</span>
+                          </div>
+                          <div className={`flex items-center justify-between px-3 py-1.5 rounded-md text-white text-sm font-semibold ${station.has_95 ? 'bg-green-600' : 'bg-red-600'}`}>
+                            <span>95 Octane</span> <span>{station.has_95 ? 'Available' : 'Empty'}</span>
+                          </div>
+                          <div className={`flex items-center justify-between px-3 py-1.5 rounded-md text-white text-sm font-semibold ${station.has_diesel ? 'bg-green-600' : 'bg-red-600'}`}>
+                            <span>Diesel</span> <span>{station.has_diesel ? 'Available' : 'Empty'}</span>
+                          </div>
+                        </div>
+
+                        <button 
+                          type="button" 
+                          onClick={(e) => openUpdateForm(e, station)} 
+                          className={`w-full flex items-center justify-center mb-2 border text-xs py-2 rounded-md font-bold transition-colors bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100`}
+                        >
+                          <Edit3 size={14} className="mr-1" /> Update Station Data
+                        </button>
+
+                        <div className="flex gap-2">
+                          <button type="button" onClick={(e) => confirmFuel(e, station.id, station.confirms)} disabled={hasInteracted} className={`flex-1 flex items-center justify-center border text-xs py-1.5 rounded-md font-semibold transition-colors ${hasInteracted ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}>
+                            <CheckCircle size={14} className="mr-1" /> Confirm
+                          </button>
+                          <button type="button" onClick={(e) => reportFalseInfo(e, station.id)} disabled={hasInteracted} className={`flex-1 flex items-center justify-center border text-xs py-1.5 rounded-md font-semibold transition-colors ${hasInteracted ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed' : 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100'}`}>
+                            <AlertTriangle size={14} className="mr-1" /> Fake
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
+      </MarkerClusterGroup>
     </MapContainer>
   );
 }
