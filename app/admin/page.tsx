@@ -2,7 +2,22 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Lock, Search, AlertTriangle, Trash2, Plus, MessageSquare, MapPin, CheckCircle, LogOut } from 'lucide-react';
+import { Lock, Search, AlertTriangle, Trash2, Plus, MessageSquare, MapPin, CheckCircle, LogOut, Clock } from 'lucide-react';
+
+// Helper to format timestamps
+function timeAgo(dateString: string) {
+  if (!dateString) return 'Never';
+  const now = new Date();
+  const past = new Date(dateString);
+  const diffMs = now.getTime() - past.getTime();
+  const diffMins = Math.round(diffMs / 60000);
+  
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHrs = Math.floor(diffMins / 60);
+  if (diffHrs < 24) return `${diffHrs}h ago`;
+  return `${Math.floor(diffHrs / 24)}d ago`;
+}
 
 export default function AdminDashboard() {
   // Auth State
@@ -16,37 +31,34 @@ export default function AdminDashboard() {
   const [stations, setStations] = useState<any[]>([]);
   const [feedback, setFeedback] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState<'recent' | 'name'>('recent'); // Default to recent to monitor live traffic!
 
   // Add Station State
   const [newName, setNewName] = useState('');
   const [newLat, setNewLat] = useState('');
   const [newLng, setNewLng] = useState('');
 
-  // 1. Check if the user is already logged in when the page loads
+  // 1. Check Auth
   useEffect(() => {
-    // 1. Get initial session safely
     supabase.auth.getSession().then(({ data }) => {
       if (data?.session) setSession(data.session);
     });
 
-    // 2. Listen for changes safely
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
 
-    // 3. Bulletproof cleanup (Prevents the client-side crash)
     return () => {
-      if (data?.subscription) {
-        data.subscription.unsubscribe();
-      }
+      if (data?.subscription) data.subscription.unsubscribe();
     };
   }, []);
 
-  // 2. Fetch data ONLY if the user is logged in securely
+  // 2. Fetch data
   useEffect(() => {
     if (session) {
       const fetchData = async () => {
-        const { data: stData } = await supabase.from('stations').select('*').order('name', { ascending: true });
+        // Fetch all stations
+        const { data: stData } = await supabase.from('stations').select('*');
         if (stData) setStations(stData);
         
         const { data: fbData } = await supabase.from('feedback').select('*').order('created_at', { ascending: false });
@@ -61,10 +73,8 @@ export default function AdminDashboard() {
     e.preventDefault();
     setIsLoggingIn(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    
     if (error) alert(error.message);
     else { setEmail(''); setPassword(''); }
-    
     setIsLoggingIn(false);
   };
 
@@ -109,7 +119,18 @@ export default function AdminDashboard() {
     await supabase.from('feedback').delete().eq('id', id);
   };
 
-  const filteredStations = stations.filter(st => st.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  // --- FILTERING & SORTING LOGIC ---
+  let filteredStations = [...stations].filter(st => st.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  
+  if (sortBy === 'recent') {
+    filteredStations.sort((a, b) => {
+      const timeA = new Date(a.last_updated || 0).getTime();
+      const timeB = new Date(b.last_updated || 0).getTime();
+      return timeB - timeA; // Newest first
+    });
+  } else {
+    filteredStations.sort((a, b) => a.name.localeCompare(b.name)); // A-Z
+  }
 
   // SECURE LOGIN SCREEN
   if (!session) {
@@ -143,7 +164,7 @@ export default function AdminDashboard() {
   // MAIN DASHBOARD
   return (
     <div className="min-h-screen bg-slate-950 text-white p-6 font-sans">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <header className="flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
           <div className="flex items-center gap-6">
             <h1 className="text-2xl font-bold text-red-500">FullTank <span className="text-white">Admin</span></h1>
@@ -163,10 +184,22 @@ export default function AdminDashboard() {
 
           <div className="flex items-center gap-4">
             {activeTab === 'stations' && (
-              <div className="relative">
-                <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
-                <input type="text" placeholder="Search stations..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 pr-4 py-2 rounded-full bg-slate-900 border border-slate-700 text-sm focus:outline-none focus:border-red-500 w-64" />
-              </div>
+              <>
+                <div className="relative">
+                  <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+                  <input type="text" placeholder="Search stations..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 pr-4 py-2 rounded-full bg-slate-900 border border-slate-700 text-sm focus:outline-none focus:border-red-500 w-48 lg:w-64" />
+                </div>
+                
+                {/* NEW SORT DROPDOWN */}
+                <select 
+                  value={sortBy} 
+                  onChange={(e) => setSortBy(e.target.value as 'recent' | 'name')}
+                  className="bg-slate-900 border border-slate-700 text-sm rounded-full px-4 py-2 text-gray-300 focus:outline-none focus:border-red-500"
+                >
+                  <option value="recent">🕒 Recently Updated</option>
+                  <option value="name">🔤 Alphabetical (A-Z)</option>
+                </select>
+              </>
             )}
             
             {/* Secure Logout Button */}
@@ -201,12 +234,14 @@ export default function AdminDashboard() {
               <table className="w-full text-left text-sm">
                 <thead className="bg-slate-950 text-gray-400">
                   <tr>
-                    <th className="p-4 font-semibold w-1/4">Station Name (Click to edit)</th>
+                    <th className="p-4 font-semibold w-1/4">Station Name</th>
                     <th className="p-4 font-semibold text-center">92 Oct</th>
                     <th className="p-4 font-semibold text-center">95 Oct</th>
                     <th className="p-4 font-semibold text-center">Diesel</th>
                     <th className="p-4 font-semibold">Queue</th>
                     <th className="p-4 font-semibold text-center">Trust</th>
+                    {/* NEW COLUMN */}
+                    <th className="p-4 font-semibold text-center">Last Updated</th>
                     <th className="p-4 font-semibold text-right">Actions</th>
                   </tr>
                 </thead>
@@ -228,6 +263,12 @@ export default function AdminDashboard() {
                         </select>
                       </td>
                       <td className="p-4 text-center"><input type="number" value={station.confirms} onChange={(e) => updateStation(station.id, 'confirms', parseInt(e.target.value) || 0)} className="w-16 bg-slate-950 border border-slate-700 rounded p-1 text-center text-xs focus:outline-none focus:border-red-500" /></td>
+                      
+                      {/* NEW COLUMN DATA */}
+                      <td className="p-4 text-center text-xs text-gray-400 font-medium">
+                        {timeAgo(station.last_updated)}
+                      </td>
+
                       <td className="p-4 text-right flex items-center justify-end gap-3 h-full pt-5">
                         <button onClick={() => forceReset(station.id)} className="text-yellow-500 hover:text-yellow-400 flex items-center text-xs font-bold transition-colors" title="Reset"><AlertTriangle size={14} className="mr-1" /> Reset</button>
                         <button onClick={() => deleteStation(station.id)} className="text-red-500 hover:text-red-400 flex items-center text-xs font-bold transition-colors" title="Delete"><Trash2 size={14} className="mr-1" /> Delete</button>
