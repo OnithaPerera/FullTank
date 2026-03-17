@@ -1,6 +1,6 @@
 'use client';
 
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEffect, useState } from 'react';
@@ -33,6 +33,21 @@ function timeAgo(dateString: string) {
   if (diffMins < 60) return `${diffMins}m ago`;
   if (diffHrs < 24) return `${diffHrs}h ago`;
   return `${Math.round(diffHrs / 24)}d ago`;
+}
+
+// 1. New component to smoothly fly to the user's location
+function LocationCenterer({ userLoc }: { userLoc: { lat: number, lng: number } | null }) {
+  const map = useMap();
+  const [hasCentered, setHasCentered] = useState(false);
+
+  useEffect(() => {
+    if (userLoc && !hasCentered) {
+      map.flyTo([userLoc.lat, userLoc.lng], 14, { animate: true, duration: 1.5 });
+      setHasCentered(true);
+    }
+  }, [userLoc, hasCentered, map]);
+
+  return null;
 }
 
 function MapBoundsTracker({ setStations }: { setStations: any }) {
@@ -83,7 +98,7 @@ export default function MapBox({ activeFilter, isDark }: { activeFilter: string,
 
   const openUpdateForm = (e: any, station: any) => {
     e.preventDefault();
-    e.stopPropagation(); // <-- This stops the map from closing the popup!
+    e.stopPropagation();
     setEditingId(station.id);
     setEditForm({
       has_92: station.has_92,
@@ -135,6 +150,9 @@ export default function MapBox({ activeFilter, isDark }: { activeFilter: string,
           ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" 
           : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"} 
       />
+      
+      {/* 2. Add the invisible component that listens for user location */}
+      <LocationCenterer userLoc={userLoc} />
       <MapBoundsTracker setStations={setStations} />
 
       {userLoc && (
@@ -159,7 +177,10 @@ export default function MapBox({ activeFilter, isDark }: { activeFilter: string,
         }
 
         const distanceStr = userLoc ? `${calculateDistance(userLoc.lat, userLoc.lng, station.lat, station.lng)} km` : '...';
+        
+        // Using the official Google Maps Directions URL parameters
         const gMapsLink = `https://www.google.com/maps/dir/?api=1&destination=${station.lat},${station.lng}`;
+        
         const hasInteracted = interactedStations.includes(station.id);
         const displayTime = station.confirms === 0 ? 'No updates' : timeAgo(station.last_updated);
         const isEditing = editingId === station.id;
@@ -178,7 +199,6 @@ export default function MapBox({ activeFilter, isDark }: { activeFilter: string,
                 </div>
 
                 {isEditing ? (
-                  // --- EDIT MODE ---
                   <div className="border-t border-gray-200 pt-3">
                     <p className="text-xs font-bold text-gray-700 mb-2">Update Availability:</p>
                     <div className="flex flex-col gap-2 mb-3">
@@ -206,7 +226,6 @@ export default function MapBox({ activeFilter, isDark }: { activeFilter: string,
                     </div>
                   </div>
                 ) : (
-                  // --- VIEW MODE ---
                   <>
                     <a href={gMapsLink} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-white text-sm py-2 rounded-md font-bold transition-colors mb-3 no-underline">
                       <Map size={16} className="mr-2" /> Open in Google Maps
