@@ -2,31 +2,49 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Lock, Search, AlertTriangle, Trash2, Plus, MessageSquare, MapPin, CheckCircle } from 'lucide-react';
+import { Lock, Search, AlertTriangle, Trash2, Plus, MessageSquare, MapPin, CheckCircle, LogOut } from 'lucide-react';
 
 export default function AdminDashboard() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Auth State
+  const [session, setSession] = useState<any>(null);
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [activeTab, setActiveTab] = useState('stations'); // 'stations' or 'feedback'
-  
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  // Dashboard State
+  const [activeTab, setActiveTab] = useState('stations');
   const [stations, setStations] = useState<any[]>([]);
   const [feedback, setFeedback] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Add Station State
   const [newName, setNewName] = useState('');
   const [newLat, setNewLat] = useState('');
   const [newLng, setNewLng] = useState('');
 
-  const ADMIN_PASSWORD = 'fulltank2026';
-
-  const handleLogin = (e: any) => {
-    e.preventDefault();
-    if (password === ADMIN_PASSWORD) setIsAuthenticated(true);
-    else alert('Incorrect password');
-  };
-
+  // 1. Check if the user is already logged in when the page loads
   useEffect(() => {
-    if (isAuthenticated) {
+    // 1. Get initial session safely
+    supabase.auth.getSession().then(({ data }) => {
+      if (data?.session) setSession(data.session);
+    });
+
+    // 2. Listen for changes safely
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    // 3. Bulletproof cleanup (Prevents the client-side crash)
+    return () => {
+      if (data?.subscription) {
+        data.subscription.unsubscribe();
+      }
+    };
+  }, []);
+
+  // 2. Fetch data ONLY if the user is logged in securely
+  useEffect(() => {
+    if (session) {
       const fetchData = async () => {
         const { data: stData } = await supabase.from('stations').select('*').order('name', { ascending: true });
         if (stData) setStations(stData);
@@ -36,7 +54,23 @@ export default function AdminDashboard() {
       };
       fetchData();
     }
-  }, [isAuthenticated]);
+  }, [session]);
+
+  // --- AUTHENTICATION ACTIONS ---
+  const handleLogin = async (e: any) => {
+    e.preventDefault();
+    setIsLoggingIn(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    
+    if (error) alert(error.message);
+    else { setEmail(''); setPassword(''); }
+    
+    setIsLoggingIn(false);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
 
   // --- STATION ACTIONS ---
   const updateStation = async (id: string, field: string, value: any) => {
@@ -77,21 +111,36 @@ export default function AdminDashboard() {
 
   const filteredStations = stations.filter(st => st.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
-  // LOGIN SCREEN
-  if (!isAuthenticated) {
+  // SECURE LOGIN SCREEN
+  if (!session) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-950">
         <form onSubmit={handleLogin} className="bg-slate-900 p-8 rounded-lg shadow-xl border border-slate-800 flex flex-col gap-4 w-80">
           <div className="flex justify-center mb-2"><Lock size={40} className="text-red-600" /></div>
-          <h2 className="text-white text-xl font-bold text-center">Admin Access</h2>
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter Password" className="p-2 rounded bg-slate-800 text-white border border-slate-700" />
-          <button type="submit" className="bg-red-600 text-white font-bold py-2 rounded hover:bg-red-700">Login</button>
+          <h2 className="text-white text-xl font-bold text-center">Secure Admin Access</h2>
+          
+          <input 
+            type="email" required 
+            value={email} onChange={(e) => setEmail(e.target.value)} 
+            placeholder="Admin Email" 
+            className="p-2 rounded bg-slate-800 text-white border border-slate-700 focus:outline-none focus:border-red-500" 
+          />
+          <input 
+            type="password" required 
+            value={password} onChange={(e) => setPassword(e.target.value)} 
+            placeholder="Password" 
+            className="p-2 rounded bg-slate-800 text-white border border-slate-700 focus:outline-none focus:border-red-500" 
+          />
+          
+          <button type="submit" disabled={isLoggingIn} className="bg-red-600 text-white font-bold py-2 rounded hover:bg-red-700 transition-colors">
+            {isLoggingIn ? 'Verifying...' : 'Login'}
+          </button>
         </form>
       </div>
     );
   }
 
-  // DASHBOARD
+  // MAIN DASHBOARD
   return (
     <div className="min-h-screen bg-slate-950 text-white p-6 font-sans">
       <div className="max-w-6xl mx-auto">
@@ -99,7 +148,6 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-6">
             <h1 className="text-2xl font-bold text-red-500">FullTank <span className="text-white">Admin</span></h1>
             
-            {/* Tabs */}
             <div className="flex bg-slate-900 rounded-lg p-1 border border-slate-800">
               <button onClick={() => setActiveTab('stations')} className={`px-4 py-1.5 rounded-md text-sm font-bold flex items-center transition-colors ${activeTab === 'stations' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'}`}>
                 <MapPin size={16} className="mr-1"/> Manage Map
@@ -113,12 +161,19 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {activeTab === 'stations' && (
-            <div className="relative">
-              <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
-              <input type="text" placeholder="Search stations..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 pr-4 py-2 rounded-full bg-slate-900 border border-slate-700 text-sm focus:outline-none focus:border-red-500 w-64" />
-            </div>
-          )}
+          <div className="flex items-center gap-4">
+            {activeTab === 'stations' && (
+              <div className="relative">
+                <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+                <input type="text" placeholder="Search stations..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 pr-4 py-2 rounded-full bg-slate-900 border border-slate-700 text-sm focus:outline-none focus:border-red-500 w-64" />
+              </div>
+            )}
+            
+            {/* Secure Logout Button */}
+            <button onClick={handleLogout} className="flex items-center px-3 py-2 text-sm font-bold text-gray-400 hover:text-red-400 transition-colors">
+              <LogOut size={16} className="mr-1" /> Logout
+            </button>
+          </div>
         </header>
 
         {/* --- STATIONS TAB CONTENT --- */}
@@ -127,17 +182,17 @@ export default function AdminDashboard() {
             <div className="bg-slate-900 p-4 rounded-lg shadow border border-slate-800 mb-6 flex gap-4 items-end">
               <div className="flex-1">
                 <label className="text-xs text-gray-400 font-bold mb-1 block">Station Name</label>
-                <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g. LIOC Mount Lavinia" className="w-full p-2 rounded bg-slate-950 border border-slate-700 text-sm" />
+                <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g. LIOC Mount Lavinia" className="w-full p-2 rounded bg-slate-950 border border-slate-700 text-sm focus:outline-none focus:border-red-500" />
               </div>
               <div className="w-32">
                 <label className="text-xs text-gray-400 font-bold mb-1 block">Latitude</label>
-                <input type="text" value={newLat} onChange={(e) => setNewLat(e.target.value)} placeholder="6.8333" className="w-full p-2 rounded bg-slate-950 border border-slate-700 text-sm" />
+                <input type="text" value={newLat} onChange={(e) => setNewLat(e.target.value)} placeholder="6.8333" className="w-full p-2 rounded bg-slate-950 border border-slate-700 text-sm focus:outline-none focus:border-red-500" />
               </div>
               <div className="w-32">
                 <label className="text-xs text-gray-400 font-bold mb-1 block">Longitude</label>
-                <input type="text" value={newLng} onChange={(e) => setNewLng(e.target.value)} placeholder="79.8667" className="w-full p-2 rounded bg-slate-950 border border-slate-700 text-sm" />
+                <input type="text" value={newLng} onChange={(e) => setNewLng(e.target.value)} placeholder="79.8667" className="w-full p-2 rounded bg-slate-950 border border-slate-700 text-sm focus:outline-none focus:border-red-500" />
               </div>
-              <button onClick={addStation} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center h-[38px] text-sm">
+              <button onClick={addStation} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center h-[38px] text-sm transition-colors">
                 <Plus size={16} className="mr-1" /> Add
               </button>
             </div>
@@ -159,23 +214,23 @@ export default function AdminDashboard() {
                   {filteredStations.map((station) => (
                     <tr key={station.id} className="hover:bg-slate-800/50 transition-colors">
                       <td className="p-4 font-medium">
-                        <input type="text" value={station.name} onChange={(e) => setStations(stations.map(st => st.id === station.id ? { ...st, name: e.target.value } : st))} onBlur={(e) => renameStation(station.id, e.target.value)} className="bg-transparent border-b border-transparent hover:border-slate-600 focus:border-red-500 focus:outline-none w-full py-1 text-white" />
+                        <input type="text" value={station.name} onChange={(e) => setStations(stations.map(st => st.id === station.id ? { ...st, name: e.target.value } : st))} onBlur={(e) => renameStation(station.id, e.target.value)} className="bg-transparent border-b border-transparent hover:border-slate-600 focus:border-red-500 focus:outline-none w-full py-1 text-white transition-colors" />
                       </td>
                       <td className="p-4 text-center"><input type="checkbox" checked={station.has_92} onChange={(e) => updateStation(station.id, 'has_92', e.target.checked)} className="w-4 h-4 accent-red-600" /></td>
                       <td className="p-4 text-center"><input type="checkbox" checked={station.has_95} onChange={(e) => updateStation(station.id, 'has_95', e.target.checked)} className="w-4 h-4 accent-red-600" /></td>
                       <td className="p-4 text-center"><input type="checkbox" checked={station.has_diesel} onChange={(e) => updateStation(station.id, 'has_diesel', e.target.checked)} className="w-4 h-4 accent-red-600" /></td>
                       <td className="p-4">
-                        <select value={station.queue_length || 'Unknown'} onChange={(e) => updateStation(station.id, 'queue_length', e.target.value)} className="bg-slate-950 border border-slate-700 rounded p-1 text-xs">
+                        <select value={station.queue_length || 'Unknown'} onChange={(e) => updateStation(station.id, 'queue_length', e.target.value)} className="bg-slate-950 border border-slate-700 rounded p-1 text-xs focus:outline-none focus:border-red-500">
                           <option value="Unknown">Unknown</option>
                           <option value="Short (0-15m)">Short (0-15m)</option>
                           <option value="Medium (15-45m)">Medium (15-45m)</option>
                           <option value="Long (45m+)">Long (45m+)</option>
                         </select>
                       </td>
-                      <td className="p-4 text-center"><input type="number" value={station.confirms} onChange={(e) => updateStation(station.id, 'confirms', parseInt(e.target.value) || 0)} className="w-16 bg-slate-950 border border-slate-700 rounded p-1 text-center text-xs" /></td>
+                      <td className="p-4 text-center"><input type="number" value={station.confirms} onChange={(e) => updateStation(station.id, 'confirms', parseInt(e.target.value) || 0)} className="w-16 bg-slate-950 border border-slate-700 rounded p-1 text-center text-xs focus:outline-none focus:border-red-500" /></td>
                       <td className="p-4 text-right flex items-center justify-end gap-3 h-full pt-5">
-                        <button onClick={() => forceReset(station.id)} className="text-yellow-500 hover:text-yellow-400 flex items-center text-xs font-bold" title="Reset"><AlertTriangle size={14} className="mr-1" /> Reset</button>
-                        <button onClick={() => deleteStation(station.id)} className="text-red-500 hover:text-red-400 flex items-center text-xs font-bold" title="Delete"><Trash2 size={14} className="mr-1" /> Delete</button>
+                        <button onClick={() => forceReset(station.id)} className="text-yellow-500 hover:text-yellow-400 flex items-center text-xs font-bold transition-colors" title="Reset"><AlertTriangle size={14} className="mr-1" /> Reset</button>
+                        <button onClick={() => deleteStation(station.id)} className="text-red-500 hover:text-red-400 flex items-center text-xs font-bold transition-colors" title="Delete"><Trash2 size={14} className="mr-1" /> Delete</button>
                       </td>
                     </tr>
                   ))}
