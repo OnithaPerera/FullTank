@@ -39,9 +39,9 @@ function timeAgo(dateString: string) {
 }
 
 function isStaleTimestamp(dateString: string | null | undefined) {
-  if (!dateString) return false;
+  if (!dateString) return true;
   const past = new Date(dateString);
-  if (Number.isNaN(past.getTime())) return false;
+  if (Number.isNaN(past.getTime())) return true;
   const diffMs = Date.now() - past.getTime();
   const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
   return diffMs > THREE_HOURS_MS;
