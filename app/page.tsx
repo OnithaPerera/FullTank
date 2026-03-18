@@ -32,7 +32,6 @@ export default function Home() {
     localStorage.setItem('fulltank_theme', newTheme ? 'dark' : 'light');
   };
 
-  // CHANGED: Now accepts the fuelType and forces the main map filter to switch!
   const handleShowStation = (lat: number, lng: number, fuelType: FuelType) => {
     setTargetLoc({ lat, lng });
     setTargetTrigger(prev => prev + 1);
@@ -102,23 +101,23 @@ export default function Home() {
         <div className={`absolute bottom-8 sm:bottom-6 left-1/2 z-[2000] flex w-[98vw] sm:w-max -translate-x-1/2 rounded-full border p-1 sm:p-2 shadow-2xl backdrop-blur-md transition-colors duration-300 ${isDark ? 'bg-slate-900/90 border-slate-700 shadow-black/50' : 'bg-white/90 border-gray-200 shadow-gray-400/50'}`}>
           <div className="flex w-full items-center justify-between gap-0.5 sm:gap-1">
           
-            <button onClick={() => setActiveFilter('all')} className={`flex-1 px-1 sm:px-4 py-2 rounded-full text-[12px] sm:text-sm font-bold whitespace-nowrap text-center transition-all ${activeFilter === 'all' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
+            <button onClick={() => setActiveFilter('all')} className={`flex-1 px-1 sm:px-4 py-2 rounded-full text-[10px] sm:text-xs font-bold whitespace-nowrap text-center transition-all ${activeFilter === 'all' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
               All Fuels
             </button>
             
-            <button onClick={() => setActiveFilter('has_92')} className={`flex-1 px-1 sm:px-4 py-2 rounded-full text-[12px] sm:text-sm font-bold whitespace-nowrap text-center transition-all ${activeFilter === 'has_92' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
+            <button onClick={() => setActiveFilter('has_92')} className={`flex-1 px-1 sm:px-4 py-2 rounded-full text-[10px] sm:text-xs font-bold whitespace-nowrap text-center transition-all ${activeFilter === 'has_92' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
               92 Octane
             </button>
             
-            <button onClick={() => setActiveFilter('has_95')} className={`flex-1 px-1 sm:px-4 py-2 rounded-full text-[12px] sm:text-sm font-bold whitespace-nowrap text-center transition-all ${activeFilter === 'has_95' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
+            <button onClick={() => setActiveFilter('has_95')} className={`flex-1 px-1 sm:px-4 py-2 rounded-full text-[10px] sm:text-xs font-bold whitespace-nowrap text-center transition-all ${activeFilter === 'has_95' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
               95 Octane
             </button>
             
-            <button onClick={() => setActiveFilter('has_diesel')} className={`flex-1 flex items-center justify-center gap-0.5 px-1 sm:px-4 py-2 rounded-full text-[12px] sm:text-sm font-bold whitespace-nowrap text-center transition-all ${activeFilter === 'has_diesel' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
+            <button onClick={() => setActiveFilter('has_diesel')} className={`flex-1 flex items-center justify-center gap-0.5 px-1 sm:px-4 py-2 rounded-full text-[10px] sm:text-xs font-bold whitespace-nowrap text-center transition-all ${activeFilter === 'has_diesel' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
               <Droplet size={12} className="hidden sm:block" /> Diesel
             </button>
 
-            <button onClick={() => setActiveFilter('has_super_diesel')} className={`flex-1 flex items-center justify-center gap-0.5 px-1 sm:px-4 py-2 rounded-full text-[12px] sm:text-sm font-bold whitespace-nowrap text-center transition-all ${activeFilter === 'has_super_diesel' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
+            <button onClick={() => setActiveFilter('has_super_diesel')} className={`flex-1 flex items-center justify-center gap-0.5 px-1 sm:px-4 py-2 rounded-full text-[10px] sm:text-xs font-bold whitespace-nowrap text-center transition-all ${activeFilter === 'has_super_diesel' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
               <Droplet size={12} className="hidden sm:block text-yellow-500" /> Super Diesel
             </button>
 

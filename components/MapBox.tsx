@@ -7,14 +7,12 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../app/lib/supabase';
 import { Map, CheckCircle, AlertTriangle, MapPin, Clock, Users, Edit3 } from 'lucide-react';
 
-// --- Icon Definitions ---
 const greenIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png', iconSize: [25, 41], iconAnchor: [12, 41] });
 const redIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png', iconSize: [25, 41], iconAnchor: [12, 41] });
 const yellowIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png', iconSize: [25, 41], iconAnchor: [12, 41] });
 const blueIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png', iconSize: [25, 41], iconAnchor: [12, 41] });
 const staleIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png', iconSize: [25, 41], iconAnchor: [12, 41] });
 
-// --- Helper Functions ---
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371; 
   const dLat = (lat2 - lat1) * (Math.PI / 180);
@@ -47,7 +45,6 @@ function isStaleTimestamp(dateString: string | null | undefined) {
   return diffMs > THREE_HOURS_MS;
 }
 
-// --- Map Components ---
 function LocationCenterer({ userLoc, recenterTrigger }: { userLoc: { lat: number, lng: number } | null, recenterTrigger: number }) {
   const map = useMap();
   const [hasCentered, setHasCentered] = useState(false);
@@ -68,7 +65,6 @@ function LocationCenterer({ userLoc, recenterTrigger }: { userLoc: { lat: number
   return null;
 }
 
-// NEW: Center map specifically on a target station
 function TargetCenterer({ targetLoc, targetTrigger }: { targetLoc: { lat: number, lng: number } | null, targetTrigger: number }) {
   const map = useMap();
   useEffect(() => {
@@ -94,7 +90,6 @@ function MapBoundsTracker({ setStations }: { setStations: any }) {
   return null;
 }
 
-// --- Main Export ---
 export default function MapBox({ 
   activeFilter, 
   isDark, 
@@ -229,7 +224,6 @@ export default function MapBox({
       {stations.map((station) => {
         let isAvailable = false;
         
-        // Handle filter logic
         if (activeFilter === 'all') {
           isAvailable = station.has_92 || station.has_95 || station.has_diesel || station.has_super_diesel;
         } else {
@@ -237,7 +231,6 @@ export default function MapBox({
           if (!isAvailable) return null;
         }
 
-        // Determine correct icon based on state
         let currentIcon = redIcon;
         if (isAvailable) {
           const isStale = isStaleTimestamp(station.last_updated);
