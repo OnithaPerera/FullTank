@@ -9,12 +9,14 @@ const MapBox = dynamic(() => import('../components/MapBox'), { ssr: false });
 
 export default function Home() {
   const [activeFilter, setActiveFilter] = useState('all');
-  const [isDark, setIsDark] = useState(true);
+  // CHANGED: Default isDark to false (light mode)
+  const [isDark, setIsDark] = useState(false);
   const [recenterTrigger, setRecenterTrigger] = useState(0); 
 
   useEffect(() => {
+    // CHANGED: Only set to dark if they previously saved 'dark'
     const savedTheme = localStorage.getItem('fulltank_theme');
-    if (savedTheme === 'light') setIsDark(false);
+    if (savedTheme === 'dark') setIsDark(true);
   }, []);
 
   const toggleTheme = () => {
