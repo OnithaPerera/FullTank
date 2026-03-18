@@ -1,139 +1,331 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, MapPin, ShieldCheck, AlertTriangle, Send } from 'lucide-react';
+import { ArrowLeft, Moon, SunMedium, MapPin, ShieldCheck, Clock, AlertTriangle, Send } from 'lucide-react';
+
+const THEME_STORAGE_KEY = 'fulltank_theme';
+
+const reportTypes = [
+  'Add Station',
+  'Remove Station',
+  'Wrong Location',
+  'Improvement',
+  'Bug',
+  'Other',
+];
+
+const markerGuide = [
+  { color: 'bg-red-500', title: 'Red marker', description: 'Empty or no fuel currently reported.' },
+  { color: 'bg-amber-400', title: 'Yellow marker', description: 'Reported by users and still awaiting verification.' },
+  { color: 'bg-emerald-500', title: 'Green marker', description: 'Verified and available after community confirmations.' },
+  { color: 'bg-slate-400', title: 'Gray marker', description: 'Stale information that may no longer reflect current stock.' },
+];
 
 export default function AboutPage() {
-  const [feedbackForm, setFeedbackForm] = useState({ type: 'Add Station', message: '', contact: '' });
+  const [feedbackForm, setFeedbackForm] = useState({
+    type: 'Add Station',
+    message: '',
+    contact: '',
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem(THEME_STORAGE_KEY) === 'dark';
+  });
 
-  // Load the shared theme
   useEffect(() => {
-    const savedTheme = localStorage.getItem('fulltank_theme');
-    if (savedTheme === 'light') setIsDark(false);
-  }, []);
+    document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
 
-  const submitFeedback = async (e: any) => {
-    e.preventDefault();
-    if (!feedbackForm.message) return alert('Please enter a message.');
-    
+    const themeMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeMeta) {
+      themeMeta.setAttribute('content', isDark ? '#07111a' : '#f4efe8');
+    }
+  }, [isDark]);
+
+  const toggleTheme = () => {
+    const nextTheme = !isDark;
+    setIsDark(nextTheme);
+    localStorage.setItem(THEME_STORAGE_KEY, nextTheme ? 'dark' : 'light');
+  };
+
+  const submitFeedback = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!feedbackForm.message.trim()) {
+      alert('Please enter a message.');
+      return;
+    }
+
     setIsSubmitting(true);
-    await supabase.from('feedback').insert([{
-      type: feedbackForm.type,
-      message: feedbackForm.message,
-      contact: feedbackForm.contact
-    }]);
-    
+
+    await supabase.from('feedback').insert([
+      {
+        type: feedbackForm.type,
+        message: feedbackForm.message,
+        contact: feedbackForm.contact,
+      },
+    ]);
+
     setIsSubmitting(false);
     setFeedbackForm({ type: 'Add Station', message: '', contact: '' });
-    alert('Thank you! Your report has been sent directly to the developer.');
+    alert('Thank you. Your report has been sent to the developer.');
   };
 
   return (
-    <div className={`min-h-screen font-sans overflow-y-auto pb-12 transition-colors duration-300 ${isDark ? 'bg-slate-950 text-white' : 'bg-gray-100 text-slate-900'}`}>
-      <div className="max-w-3xl mx-auto p-6">
-        
-        {/* Navigation */}
-        <Link href="/" className="inline-flex items-center text-red-600 hover:text-red-500 font-bold mb-8 transition-colors">
-          <ArrowLeft size={20} className="mr-2" /> Back to Map
-        </Link>
+    <main className={`${isDark ? 'theme-dark' : 'theme-light'} ui-page min-h-[100dvh]`}>
+      <div className="mx-auto max-w-5xl px-4 pb-14 pt-[calc(env(safe-area-inset-top)+1rem)] sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between gap-3">
+          <Link href="/" className="ui-button-neutral">
+            <ArrowLeft size={16} />
+            Back to Map
+          </Link>
 
-        {/* Development Notice */}
-        <div className={`border rounded-lg p-5 mb-10 flex items-start gap-4 ${isDark ? 'bg-blue-900/30 border-blue-500/30' : 'bg-blue-50 border-blue-200'}`}>
-          <AlertTriangle className="text-blue-500 shrink-0 mt-1" size={24} />
-          <div>
-            <h2 className={`text-lg font-bold mb-1 ${isDark ? 'text-blue-400' : 'text-blue-700'}`}>Currently in Development</h2>
-            <p className={`text-sm leading-relaxed ${isDark ? 'text-blue-200' : 'text-blue-800'}`}>
-              FullTank is a crowdsourced community project. Please note that data is currently heavily focused on the <strong>Western Province</strong> as we roll out testing. Expansion to other districts will happen as the community grows.
-            </p>
-          </div>
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+            className="ui-button-icon"
+          >
+            {isDark ? <SunMedium size={18} /> : <Moon size={18} />}
+          </button>
         </div>
 
-        {/* How it Works Section */}
-        <div className="mb-12">
-          <h2 className={`text-2xl font-bold mb-6 border-b pb-2 ${isDark ? 'border-slate-800' : 'border-gray-300'}`}>How FullTank Works</h2>
-          
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className={`p-5 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200 shadow-sm'}`}>
-              <MapPin className="text-red-500 mb-3" size={28} />
-              <h3 className="font-bold text-lg mb-2">Map Markers</h3>
-              <ul className={`text-sm space-y-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                <li className="flex items-center"><span className="inline-block w-3 h-3 rounded-full bg-red-600 mr-2 shrink-0"></span><span><strong>Red:</strong> Out of stock (Empty)</span></li>
-                <li className="flex items-center"><span className="inline-block w-3 h-3 rounded-full bg-yellow-500 mr-2 shrink-0"></span><span><strong>Yellow:</strong> Fuel reported, unverified.</span></li>
-                <li className="flex items-center"><span className="inline-block w-3 h-3 rounded-full bg-green-500 mr-2 shrink-0"></span><span><strong>Green:</strong> Verified! Has fuel.</span></li>
-              </ul>
+        <section className="ui-panel mt-4 rounded-[32px] px-5 py-6 sm:px-7 sm:py-7">
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(17rem,1fr)]">
+            <div>
+              <div className="flex items-center gap-3">
+                <div className="ui-brand-mark shrink-0">
+                  <Image src="/logo.svg" alt="FullTank logo" width={38} height={38} priority />
+                </div>
+                <div>
+                  <p className="ui-kicker">About FullTank</p>
+                  <h1 className="mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">
+                    A fuel utility built for quick, reliable decisions.
+                  </h1>
+                </div>
+              </div>
+
+              <p className="ui-text-muted mt-4 max-w-2xl text-sm leading-7 sm:text-base">
+                FullTank is a lightweight mobile-first map for checking fuel availability, queue estimates, and
+                crowdsourced verification. The interface is designed to stay fast and readable on low-end devices
+                while keeping community updates easy to submit.
+              </p>
+
+              <div className="mt-5 flex flex-wrap gap-2">
+                <span className="ui-badge">Crowdsourced updates</span>
+                <span className="ui-badge">3-user verification</span>
+                <span className="ui-badge">Queue awareness</span>
+              </div>
             </div>
 
-            <div className={`p-5 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200 shadow-sm'}`}>
-              <ShieldCheck className="text-green-500 mb-3" size={28} />
-              <h3 className="font-bold text-lg mb-2">The Trust System</h3>
-              <p className={`text-sm leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                To prevent false information, when someone reports new fuel, the marker turns yellow. It requires <strong>3 separate users</strong> to click the "Confirm" button before the station is officially marked as Verified (Green).
+            <div className="ui-panel-muted rounded-[26px] px-5 py-5">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="mt-1 text-[var(--ui-brand)]" size={20} />
+                <div>
+                  <p className="text-sm font-semibold">Current rollout</p>
+                  <p className="ui-text-muted mt-1 text-sm leading-6">
+                    Data is currently strongest around the Western Province while the community grows. Reports from
+                    other districts still help improve coverage.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 space-y-3 text-sm">
+                <div className="rounded-[18px] border border-[var(--ui-border)] px-4 py-3">
+                  <p className="font-semibold">Verification threshold</p>
+                  <p className="ui-text-muted mt-1">Stations turn green after 3 separate confirms.</p>
+                </div>
+                <div className="rounded-[18px] border border-[var(--ui-border)] px-4 py-3">
+                  <p className="font-semibold">Stale reports</p>
+                  <p className="ui-text-muted mt-1">Gray markers indicate older community data.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-6 grid gap-4 lg:grid-cols-3">
+          <div className="ui-panel rounded-[28px] px-5 py-5">
+            <div className="flex items-center gap-2">
+              <MapPin className="text-[var(--ui-brand)]" size={18} />
+              <h2 className="text-lg font-semibold">Marker guide</h2>
+            </div>
+
+            <div className="mt-4 space-y-2.5">
+              {markerGuide.map((item) => (
+                <div key={item.title} className="ui-panel-muted rounded-[20px] px-3.5 py-3">
+                  <div className="flex items-start gap-3">
+                    <span className={`mt-1 h-3 w-3 shrink-0 rounded-full ${item.color}`}></span>
+                    <div>
+                      <p className="text-sm font-semibold">{item.title}</p>
+                      <p className="ui-text-muted mt-1 text-sm leading-5">{item.description}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="ui-panel rounded-[28px] px-5 py-5">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="text-emerald-500" size={18} />
+              <h2 className="text-lg font-semibold">Trust system</h2>
+            </div>
+
+            <div className="mt-4 space-y-3">
+              <div className="ui-panel-muted rounded-[20px] px-4 py-3.5">
+                <p className="text-sm font-semibold">Why it matters</p>
+                <p className="ui-text-muted mt-1 text-sm leading-6">
+                  A single update is helpful but not always enough. Community confirmations make the signal more
+                  reliable before the marker turns green.
+                </p>
+              </div>
+
+              <div className="ui-panel-muted rounded-[20px] px-4 py-3.5">
+                <p className="text-sm font-semibold">How to help</p>
+                <p className="ui-text-muted mt-1 text-sm leading-6">
+                  Tap <strong>Confirm</strong> when the information is correct. Use <strong>Update Station Data</strong>{' '}
+                  when availability or queue conditions change.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="ui-panel rounded-[28px] px-5 py-5">
+            <div className="flex items-center gap-2">
+              <Clock className="text-slate-500" size={18} />
+              <h2 className="text-lg font-semibold">Good reports are specific</h2>
+            </div>
+
+            <div className="mt-4 space-y-3">
+              <div className="ui-panel-muted rounded-[20px] px-4 py-3.5">
+                <p className="text-sm font-semibold">Helpful details</p>
+                <p className="ui-text-muted mt-1 text-sm leading-6">
+                  Include station name, area, Google Maps links, queue estimate, or the exact issue you noticed.
+                </p>
+              </div>
+
+              <div className="ui-panel-muted rounded-[20px] px-4 py-3.5">
+                <p className="text-sm font-semibold">What happens next</p>
+                <p className="ui-text-muted mt-1 text-sm leading-6">
+                  Reports go directly to the developer and are used to improve coverage, clean up map data, and fix
+                  product issues.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(17rem,0.7fr)]">
+          <div className="ui-panel rounded-[32px] px-5 py-6 sm:px-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="ui-kicker">Reports</p>
+                <h2 className="mt-1 text-2xl font-semibold tracking-tight">Contact and feedback</h2>
+                <p className="ui-text-muted mt-2 text-sm leading-6">
+                  Report missing stations, wrong locations, bugs, or product improvements. The form is intentionally
+                  simple so it stays quick to complete on mobile.
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={submitFeedback} className="mt-6 space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-semibold">Report type</label>
+                <select
+                  value={feedbackForm.type}
+                  onChange={(event) =>
+                    setFeedbackForm((current) => ({ ...current, type: event.target.value }))
+                  }
+                  className="ui-select"
+                >
+                  {reportTypes.map((reportType) => (
+                    <option key={reportType} value={reportType}>
+                      {reportType === 'Add Station'
+                        ? 'Add a Missing Station'
+                        : reportType === 'Remove Station'
+                          ? 'Remove / Delete a Station'
+                          : reportType === 'Wrong Location'
+                            ? 'Incorrect Station Data / Location'
+                            : reportType === 'Improvement'
+                              ? 'App Improvement Suggestion'
+                              : reportType === 'Bug'
+                                ? 'Report a Bug'
+                                : 'Other'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold">Details</label>
+                <textarea
+                  required
+                  rows={6}
+                  placeholder="Share the station name, exact issue, Google Maps link, or any details that help verify the report."
+                  value={feedbackForm.message}
+                  onChange={(event) =>
+                    setFeedbackForm((current) => ({ ...current, message: event.target.value }))
+                  }
+                  className="ui-textarea"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold">Contact (optional)</label>
+                <input
+                  type="text"
+                  placeholder="Email or phone number"
+                  value={feedbackForm.contact}
+                  onChange={(event) =>
+                    setFeedbackForm((current) => ({ ...current, contact: event.target.value }))
+                  }
+                  className="ui-input"
+                />
+              </div>
+
+              <button type="submit" disabled={isSubmitting} className="ui-button-brand w-full">
+                <Send size={16} />
+                {isSubmitting ? 'Sending...' : 'Submit Report'}
+              </button>
+            </form>
+          </div>
+
+          <div className="space-y-4">
+            <div className="ui-panel rounded-[28px] px-5 py-5">
+              <p className="ui-kicker">Quick Notes</p>
+              <div className="mt-3 space-y-3 text-sm">
+                <div className="ui-panel-muted rounded-[20px] px-4 py-3.5">
+                  <p className="font-semibold">Best for missing stations</p>
+                  <p className="ui-text-muted mt-1 leading-6">
+                    Include the station name and a Google Maps link if possible.
+                  </p>
+                </div>
+                <div className="ui-panel-muted rounded-[20px] px-4 py-3.5">
+                  <p className="font-semibold">Best for bugs</p>
+                  <p className="ui-text-muted mt-1 leading-6">
+                    Mention the page, the action you tried, and what happened instead.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="ui-panel rounded-[28px] px-5 py-5">
+              <p className="text-sm font-semibold">Made for practical use</p>
+              <p className="ui-text-muted mt-2 text-sm leading-6">
+                FullTank aims to improve first-glance clarity without adding heavy visuals or slow interactions.
               </p>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Contact & Feedback Form */}
-        <div>
-          <h2 className={`text-2xl font-bold mb-6 border-b pb-2 ${isDark ? 'border-slate-800' : 'border-gray-300'}`}>Contact & Reports</h2>
-          <p className={`text-sm mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-            Help us keep the map accurate. Use this form to report missing stations, request removals, suggest features, or report bugs.
-          </p>
-
-          <form onSubmit={submitFeedback} className={`p-6 rounded-lg border flex flex-col gap-5 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200 shadow-sm'}`}>
-            <div>
-              <label className={`text-sm font-bold mb-2 block ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>What are you reporting?</label>
-              <select 
-                value={feedbackForm.type} onChange={(e) => setFeedbackForm({...feedbackForm, type: e.target.value})}
-                className={`w-full p-3 rounded-md border text-sm focus:outline-none focus:border-red-500 ${isDark ? 'bg-slate-950 border-slate-700 text-white' : 'bg-gray-50 border-gray-300 text-black'}`}
-              >
-                <option value="Add Station">Add a Missing Station</option>
-                <option value="Remove Station">Remove / Delete a Station</option>
-                <option value="Wrong Location">Incorrect Station Data/Location</option>
-                <option value="Improvement">App Improvement Suggestion</option>
-                <option value="Bug">Report a Bug</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-
-            <div>
-              <label className={`text-sm font-bold mb-2 block ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Details</label>
-              <textarea 
-                required
-                rows={5}
-                placeholder="Please provide specifics (e.g., Google Maps links, exact station names, or detailed bug descriptions)..."
-                value={feedbackForm.message} onChange={(e) => setFeedbackForm({...feedbackForm, message: e.target.value})}
-                className={`w-full p-3 rounded-md border text-sm focus:outline-none focus:border-red-500 resize-none ${isDark ? 'bg-slate-950 border-slate-700 text-white' : 'bg-gray-50 border-gray-300 text-black'}`}
-              />
-            </div>
-
-            <div>
-              <label className={`text-sm font-bold mb-2 block ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Your Contact (Optional)</label>
-              <input 
-                type="text"
-                placeholder="Email or phone number"
-                value={feedbackForm.contact} onChange={(e) => setFeedbackForm({...feedbackForm, contact: e.target.value})}
-                className={`w-full p-3 rounded-md border text-sm focus:outline-none focus:border-red-500 ${isDark ? 'bg-slate-950 border-slate-700 text-white' : 'bg-gray-50 border-gray-300 text-black'}`}
-              />
-            </div>
-
-            <button type="submit" disabled={isSubmitting} className="mt-2 w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-md transition-colors flex items-center justify-center">
-              {isSubmitting ? 'Sending...' : <><Send size={18} className="mr-2" /> Submit Report</>}
-            </button>
-          </form>
-        </div>
-
-        {/* --- COPYRIGHT FOOTER --- */}
-        <div className={`mt-12 pt-6 text-center text-xs border-t ${isDark ? 'border-slate-800 text-gray-500' : 'border-gray-300 text-gray-400'}`}>
+        <footer className="ui-text-muted mt-8 border-t border-[var(--ui-border)] pt-5 text-center text-xs">
           <p>&copy; {new Date().getFullYear()} FullTank.</p>
-          <p className="mt-1">Created & Maintained by <strong>Onitha Perera</strong>.</p>
-        </div>
-
+          <p className="mt-1">Created and maintained by <strong>FullTank Dev Team</strong>.</p>
+        </footer>
       </div>
-    </div>
+    </main>
   );
 }

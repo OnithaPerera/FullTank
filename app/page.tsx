@@ -1,90 +1,153 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { Fuel, Droplet, Moon, Sun, LocateFixed } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
+import { Fuel, Droplets, Moon, SunMedium, LocateFixed, Info } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import MapLegend from '../components/MapLegend';
+import WelcomeModal from '../components/WelcomeModal';
 
 const MapBox = dynamic(() => import('../components/MapBox'), { ssr: false });
 
+type FuelFilter = 'all' | '92' | '95' | 'diesel' | 'super_diesel';
+
+const THEME_STORAGE_KEY = 'fulltank_theme';
+const WELCOME_STORAGE_KEY = 'fulltank_welcome_seen';
+
+const filterOptions = [
+  { value: 'all' as FuelFilter, label: 'All Fuels', icon: Fuel },
+  { value: '92' as FuelFilter, label: 'Petrol 92', icon: Fuel },
+  { value: '95' as FuelFilter, label: 'Petrol 95', icon: Fuel },
+  { value: 'diesel' as FuelFilter, label: 'Diesel', icon: Droplets },
+  { value: 'super_diesel' as FuelFilter, label: 'Super Diesel', icon: Droplets },
+];
+
 export default function Home() {
-  const [activeFilter, setActiveFilter] = useState('all');
-  const [isDark, setIsDark] = useState(false);
-  const [recenterTrigger, setRecenterTrigger] = useState(0); 
+  const [activeFilter, setActiveFilter] = useState<FuelFilter>('all');
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem(THEME_STORAGE_KEY) === 'dark';
+  });
+  const [recenterTrigger, setRecenterTrigger] = useState(0);
+  const [showWelcome, setShowWelcome] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return !localStorage.getItem(WELCOME_STORAGE_KEY);
+  });
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('fulltank_theme');
-    if (savedTheme === 'dark') setIsDark(true);
-  }, []);
+    document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+
+    const themeMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeMeta) {
+      themeMeta.setAttribute('content', isDark ? '#07111a' : '#f4efe8');
+    }
+  }, [isDark]);
 
   const toggleTheme = () => {
-    const newTheme = !isDark;
-    setIsDark(newTheme);
-    localStorage.setItem('fulltank_theme', newTheme ? 'dark' : 'light');
+    const nextTheme = !isDark;
+    setIsDark(nextTheme);
+    localStorage.setItem(THEME_STORAGE_KEY, nextTheme ? 'dark' : 'light');
   };
 
-  // CHANGED: h-screen is now h-[100dvh] to fix mobile browser cutoffs
+  const dismissWelcome = () => {
+    localStorage.setItem(WELCOME_STORAGE_KEY, '1');
+    setShowWelcome(false);
+  };
+
   return (
-    <main className={`flex h-[100dvh] flex-col overflow-hidden transition-colors duration-300 ${isDark ? 'bg-slate-950 text-white' : 'bg-gray-100 text-slate-900'}`}>
-      
-      {/* Header */}
-      <header className={`flex items-center justify-between p-4 shadow-md border-b flex-none transition-colors duration-300 ${isDark ? 'bg-slate-900 border-red-900/30' : 'bg-white border-red-200'}`}>
-        <div className="flex items-center gap-2">
-          <div className="rounded-full bg-red-600 p-2">
-            <Fuel size={24} className="text-white" />
+    <main className={`${isDark ? 'theme-dark' : 'theme-light'} ui-page`}>
+      <div className="flex h-[100dvh] w-full flex-col overflow-hidden">
+        <header className="ui-panel flex-none rounded-none border-x-0 border-t-0 px-3.5 py-3 sm:px-4.5 sm:py-3.5">
+          <div className="flex items-start justify-between gap-2.5">
+            <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+              <div className="ui-brand-mark h-11 w-11 shrink-0 rounded-[16px] sm:h-12 sm:w-12">
+                <Image src="/logo.svg" alt="FullTank logo" width={34} height={34} priority />
+              </div>
+
+              <div className="min-w-0">
+                <p className="ui-kicker">Live Fuel Map</p>
+                <h1 className="mt-0.5 text-[1.1rem] font-semibold tracking-tight sm:text-[1.35rem]">
+                  Full<span className="text-[var(--ui-brand)]">Tank</span>
+                </h1>
+                <p className="ui-text-muted mt-1 max-w-[18rem] text-[13px] leading-4 sm:max-w-none sm:text-sm sm:leading-5">
+                  Fast community fuel updates built for quick map scanning.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-2">
+              <Link href="/about" className="ui-button-neutral hidden sm:inline-flex">
+                <Info size={16} />
+                About &amp; Reports
+              </Link>
+
+              <Link href="/about" aria-label="About and reports" className="ui-button-icon sm:hidden">
+                <Info size={18} />
+              </Link>
+
+              <button
+                type="button"
+                onClick={toggleTheme}
+                aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+                className="ui-button-icon"
+              >
+                {isDark ? <SunMedium size={18} /> : <Moon size={18} />}
+              </button>
+            </div>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-red-600">Full<span className={isDark ? "text-white" : "text-slate-900"}>Tank</span></h1>
-        </div>
-        
-        <div className="flex items-center gap-2 sm:gap-3">
-          <Link href="/about" className={`flex items-center px-3 py-1.5 rounded-full transition-colors ${isDark ? 'bg-slate-800 text-blue-400 hover:bg-slate-700' : 'bg-blue-100 text-blue-600 hover:bg-blue-200'}`}>
-            <span className="text-xs font-bold">About</span>
-          </Link>
 
-          <button onClick={toggleTheme} className={`p-2 rounded-full transition-colors ${isDark ? 'bg-slate-800 text-yellow-400 hover:bg-slate-700' : 'bg-gray-200 text-slate-700 hover:bg-gray-300'}`}>
-            {isDark ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
-        </div>
-      </header>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <span className="ui-badge">Reliable community signals</span>
+            <span className="ui-badge">Lightweight on mobile</span>
+            <span className="ui-badge hidden sm:inline-flex">Tap markers to confirm or update</span>
+          </div>
+        </header>
 
-      {/* Map Area */}
-      <div className="flex-grow relative z-0">
-        <MapBox activeFilter={activeFilter} isDark={isDark} recenterTrigger={recenterTrigger} />
+        <section className="relative min-h-0 flex-1 overflow-hidden">
+          <MapBox activeFilter={activeFilter} isDark={isDark} recenterTrigger={recenterTrigger} />
 
-        {/* Floating Standalone Locate Button */}
-        <button 
-          onClick={() => setRecenterTrigger(prev => prev + 1)} 
-          className={`absolute bottom-[6.9rem] sm:bottom-20 right-4 sm:right-6 z-[2000] p-2.5 rounded-full shadow-xl border transition-all duration-300 backdrop-blur-md ${isDark ? 'bg-slate-900/90 border-slate-700 shadow-black/50 text-blue-400 hover:bg-slate-800 hover:scale-105' : 'bg-white/90 border-gray-200 shadow-gray-400/50 text-blue-600 hover:bg-blue-50 hover:scale-105'}`} 
-          title="Locate Me"
-        >
-          <LocateFixed size={28} />
-        </button>
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-[2000] flex justify-end p-2.5 sm:p-3">
+            <div className="pointer-events-auto">
+              <MapLegend />
+            </div>
+          </div>
 
-        {/* Floating Bottom Navigation Bar */}
-        <div className={`absolute bottom-8 sm:bottom-6 left-1/2 -translate-x-1/2 z-[2000] w-max max-w-[95vw] flex items-center justify-between gap-1 p-2 rounded-full shadow-2xl transition-colors duration-300 border backdrop-blur-md ${isDark ? 'bg-slate-900/90 border-slate-700 shadow-black/50' : 'bg-white/90 border-gray-200 shadow-gray-400/50'}`}>
-          
-          <button onClick={() => setActiveFilter('all')} className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all ${activeFilter === 'all' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
-            All Fuels
-          </button>
-          
-          <button onClick={() => setActiveFilter('92')} className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all ${activeFilter === '92' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
-            92 Octane
-          </button>
-          
-          <button onClick={() => setActiveFilter('95')} className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all ${activeFilter === '95' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
-            95 Octane
-          </button>
-          
-          <button onClick={() => setActiveFilter('diesel')} className={`flex items-center gap-1 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all ${activeFilter === 'diesel' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
-            <Droplet size={14} className="hidden sm:block" /> Diesel
+          <button
+            type="button"
+            onClick={() => setRecenterTrigger((value) => value + 1)}
+            className="ui-button-icon absolute bottom-[calc(env(safe-area-inset-bottom)+5.15rem)] right-3 z-[2000] h-11 w-11 shadow-lg sm:bottom-[5.15rem] sm:right-3.5"
+            title="Locate me"
+            aria-label="Locate me"
+          >
+            <LocateFixed size={18} />
           </button>
 
-          <button onClick={() => setActiveFilter('super_diesel')} className={`flex items-center gap-1 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all ${activeFilter === 'super_diesel' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
-            <Droplet size={14} className="hidden sm:block text-yellow-500" /> Super Diesel
-          </button>
-          
-        </div>
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2000]">
+            <div className="pointer-events-auto absolute bottom-[calc(env(safe-area-inset-bottom)+0.6rem)] left-1/2 flex max-w-[calc(100vw-1rem)] -translate-x-1/2 items-center gap-1.5 overflow-x-auto no-scrollbar rounded-full p-1.5 sm:max-w-[calc(100vw-1.5rem)] ui-dock">
+              {filterOptions.map((filter) => {
+                const Icon = filter.icon;
+                const isActive = activeFilter === filter.value;
+
+                return (
+                  <button
+                    key={filter.value}
+                    type="button"
+                    onClick={() => setActiveFilter(filter.value)}
+                    aria-pressed={isActive}
+                    className={`ui-control-button ${isActive ? 'ui-control-button-active' : ''}`}
+                  >
+                    <Icon size={15} />
+                    <span>{filter.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </section>
       </div>
+
+      <WelcomeModal open={showWelcome} onClose={dismissWelcome} />
     </main>
   );
 }
