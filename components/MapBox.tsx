@@ -231,16 +231,13 @@ export default function MapBox({
           if (!isAvailable) return null;
         }
 
+        const isStale = station.confirms === 0 || isStaleTimestamp(station.last_updated);
         let currentIcon = redIcon;
-        if (isAvailable) {
-          const isStale = isStaleTimestamp(station.last_updated);
-          if (isStale) {
-            currentIcon = staleIcon;
-          } else if (station.confirms >= 3) {
-            currentIcon = greenIcon;
-          } else {
-            currentIcon = yellowIcon; 
-          }
+        if (isStale) {
+          currentIcon = staleIcon;
+        } else if (isAvailable) {
+          if (station.confirms >= 3) currentIcon = greenIcon;
+          else currentIcon = yellowIcon;
         }
 
         const distanceStr = userLoc ? `${calculateDistance(userLoc.lat, userLoc.lng, station.lat, station.lng).toFixed(1)} km` : '...';
