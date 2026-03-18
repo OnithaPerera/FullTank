@@ -1,7 +1,6 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-// Removed 'Info' from the lucide-react import since we aren't using the icon anymore
 import { Fuel, Droplet, Moon, Sun, LocateFixed } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -10,12 +9,14 @@ const MapBox = dynamic(() => import('../components/MapBox'), { ssr: false });
 
 export default function Home() {
   const [activeFilter, setActiveFilter] = useState('all');
-  const [isDark, setIsDark] = useState(true);
+  // CHANGED: Default isDark to false (light mode)
+  const [isDark, setIsDark] = useState(false);
   const [recenterTrigger, setRecenterTrigger] = useState(0); 
 
   useEffect(() => {
+    // CHANGED: Only set to dark if they previously saved 'dark'
     const savedTheme = localStorage.getItem('fulltank_theme');
-    if (savedTheme === 'light') setIsDark(false);
+    if (savedTheme === 'dark') setIsDark(true);
   }, []);
 
   const toggleTheme = () => {
@@ -25,7 +26,7 @@ export default function Home() {
   };
 
   return (
-    <main className={`flex h-screen flex-col overflow-hidden transition-colors duration-300 ${isDark ? 'bg-slate-950 text-white' : 'bg-gray-100 text-slate-900'}`}>
+    <main className={`flex h-[100dvh] flex-col overflow-hidden transition-colors duration-300 ${isDark ? 'bg-slate-950 text-white' : 'bg-gray-100 text-slate-900'}`}>
       
       {/* Header */}
       <header className={`flex items-center justify-between p-4 shadow-md border-b flex-none transition-colors duration-300 ${isDark ? 'bg-slate-900 border-red-900/30' : 'bg-white border-red-200'}`}>
@@ -33,14 +34,10 @@ export default function Home() {
           <div className="rounded-full bg-red-600 p-2">
             <Fuel size={24} className="text-white" />
           </div>
-          {/* Removed the 'hidden xs:block' classes so the name is ALWAYS visible */}
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-red-600">Full<span className={isDark ? "text-white" : "text-slate-900"}>Tank</span></h1>
         </div>
         
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* The "Live" indicator div has been entirely removed */}
-          
-          {/* The "About" button with the icon removed */}
           <Link href="/about" className={`flex items-center px-3 py-1.5 rounded-full transition-colors ${isDark ? 'bg-slate-800 text-blue-400 hover:bg-slate-700' : 'bg-blue-100 text-blue-600 hover:bg-blue-200'}`}>
             <span className="text-xs font-bold">About</span>
           </Link>
@@ -56,7 +53,7 @@ export default function Home() {
         <MapBox activeFilter={activeFilter} isDark={isDark} recenterTrigger={recenterTrigger} />
 
         {/* Floating Bottom Navigation Bar */}
-        <div className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-[2000] w-max max-w-[95vw] flex items-center justify-between gap-1 p-2 rounded-full shadow-2xl transition-colors duration-300 border backdrop-blur-md ${isDark ? 'bg-slate-900/90 border-slate-700 shadow-black/50' : 'bg-white/90 border-gray-200 shadow-gray-400/50'}`}>
+        <div className={`absolute bottom-8 sm:bottom-6 left-1/2 -translate-x-1/2 z-[2000] w-max max-w-[95vw] flex items-center justify-between gap-1 p-2 rounded-full shadow-2xl transition-colors duration-300 border backdrop-blur-md ${isDark ? 'bg-slate-900/90 border-slate-700 shadow-black/50' : 'bg-white/90 border-gray-200 shadow-gray-400/50'}`}>
           
           <button onClick={() => setActiveFilter('all')} className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all ${activeFilter === 'all' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
             All Fuels
