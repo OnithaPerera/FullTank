@@ -3,10 +3,11 @@
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Fuel, Droplets, Moon, SunMedium, LocateFixed, Info } from 'lucide-react';
+import { Fuel, Droplets, Moon, SunMedium, LocateFixed, Info, Navigation } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import MapLegend from '../components/MapLegend';
 import WelcomeModal from '../components/WelcomeModal';
+import NearestSheds from '../components/NearestSheds';
 
 const MapBox = dynamic(() => import('../components/MapBox'), { ssr: false });
 
@@ -23,13 +24,30 @@ const filterOptions = [
   { value: 'super_diesel' as FuelFilter, label: 'Super Diesel', icon: Droplets },
 ];
 
+// Mapper to translate NearestSheds output to the new UI filter state
+const fuelKeyToFilter: Record<string, FuelFilter> = {
+  has_92: '92',
+  has_95: '95',
+  has_diesel: 'diesel',
+  has_super_diesel: 'super_diesel'
+};
+
 export default function Home() {
   const [activeFilter, setActiveFilter] = useState<FuelFilter>('all');
   const [isDark, setIsDark] = useState(() => {
     if (typeof window === 'undefined') return false;
     return localStorage.getItem(THEME_STORAGE_KEY) === 'dark';
   });
+  
+  // Map control states
   const [recenterTrigger, setRecenterTrigger] = useState(0);
+  const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
+  
+  // Nearby Sheds states
+  const [showNearest, setShowNearest] = useState(false);
+  const [targetLoc, setTargetLoc] = useState<{ lat: number; lng: number } | null>(null);
+  const [targetTrigger, setTargetTrigger] = useState(0);
+
   const [showWelcome, setShowWelcome] = useState(() => {
     if (typeof window === 'undefined') return false;
     return !localStorage.getItem(WELCOME_STORAGE_KEY);
@@ -37,7 +55,6 @@ export default function Home() {
 
   useEffect(() => {
     document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
-
     const themeMeta = document.querySelector('meta[name="theme-color"]');
     if (themeMeta) {
       themeMeta.setAttribute('content', isDark ? '#07111a' : '#f4efe8');
@@ -53,6 +70,12 @@ export default function Home() {
   const dismissWelcome = () => {
     localStorage.setItem(WELCOME_STORAGE_KEY, '1');
     setShowWelcome(false);
+  };
+
+  const handleShowStation = (lat: number, lng: number, fuelKey: string) => {
+    setTargetLoc({ lat, lng });
+    setTargetTrigger(prev => prev + 1);
+    setActiveFilter(fuelKeyToFilter[fuelKey]); 
   };
 
   return (
@@ -77,11 +100,19 @@ export default function Home() {
             </div>
 
             <div className="flex shrink-0 items-center gap-2">
+              {/* RESTORED: Nearby Button styled with the new UI system */}
+              <button onClick={() => setShowNearest(true)} className="ui-button-neutral hidden sm:inline-flex text-[var(--ui-brand)] border-[var(--ui-brand-muted)]">
+                <Navigation size={16} />
+                Nearby
+              </button>
+              <button onClick={() => setShowNearest(true)} aria-label="Nearby sheds" className="ui-button-icon sm:hidden text-[var(--ui-brand)]">
+                <Navigation size={18} />
+              </button>
+
               <Link href="/about" className="ui-button-neutral hidden sm:inline-flex">
                 <Info size={16} />
-                About &amp; Reports
+                About
               </Link>
-
               <Link href="/about" aria-label="About and reports" className="ui-button-icon sm:hidden">
                 <Info size={18} />
               </Link>
@@ -96,16 +127,18 @@ export default function Home() {
               </button>
             </div>
           </div>
-
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            <span className="ui-badge">Reliable community signals</span>
-            <span className="ui-badge">Lightweight on mobile</span>
-            <span className="ui-badge hidden sm:inline-flex">Tap markers to confirm or update</span>
-          </div>
         </header>
 
         <section className="relative min-h-0 flex-1 overflow-hidden">
-          <MapBox activeFilter={activeFilter} isDark={isDark} recenterTrigger={recenterTrigger} />
+          {/* RESTORED: TargetLoc and userLoc props */}
+          <MapBox 
+            activeFilter={activeFilter} 
+            isDark={isDark} 
+            recenterTrigger={recenterTrigger} 
+            targetLoc={targetLoc}
+            targetTrigger={targetTrigger}
+            onUserLocChange={setUserLoc}
+          />
 
           <div className="pointer-events-none absolute inset-x-0 top-0 z-[2000] flex justify-end p-2.5 sm:p-3">
             <div className="pointer-events-auto">
@@ -147,6 +180,13 @@ export default function Home() {
         </section>
       </div>
 
+      <NearestSheds
+        userLoc={userLoc}
+        trigger={showNearest}
+        isDark={isDark}
+        onClose={() => setShowNearest(false)}
+        onShowStation={handleShowStation}
+      />
       <WelcomeModal open={showWelcome} onClose={dismissWelcome} />
     </main>
   );
