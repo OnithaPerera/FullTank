@@ -35,12 +35,10 @@ function timeAgo(dateString: string) {
   return `${Math.round(diffHrs / 24)}d ago`;
 }
 
-// Updated to accept recenterTrigger
 function LocationCenterer({ userLoc, recenterTrigger }: { userLoc: { lat: number, lng: number } | null, recenterTrigger: number }) {
   const map = useMap();
   const [hasCentered, setHasCentered] = useState(false);
 
-  // Initial load centering
   useEffect(() => {
     if (userLoc && !hasCentered) {
       map.flyTo([userLoc.lat, userLoc.lng], 14, { animate: true, duration: 1.5 });
@@ -48,7 +46,6 @@ function LocationCenterer({ userLoc, recenterTrigger }: { userLoc: { lat: number
     }
   }, [userLoc, hasCentered, map]);
 
-  // Center when the locate button is clicked
   useEffect(() => {
     if (userLoc && recenterTrigger > 0) {
       map.flyTo([userLoc.lat, userLoc.lng], 15, { animate: true, duration: 1.0 });
@@ -72,14 +69,19 @@ function MapBoundsTracker({ setStations }: { setStations: any }) {
   return null;
 }
 
-// Added recenterTrigger prop
 export default function MapBox({ activeFilter, isDark, recenterTrigger }: { activeFilter: string, isDark: boolean, recenterTrigger: number }) {
   const [stations, setStations] = useState<any[]>([]);
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [interactedStations, setInteractedStations] = useState<string[]>([]);
   
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ has_92: false, has_95: false, has_diesel: false, queue_length: 'Unknown' });
+  const [editForm, setEditForm] = useState({ 
+    has_92: false, 
+    has_95: false, 
+    has_diesel: false, 
+    has_super_diesel: false, 
+    queue_length: 'Unknown' 
+  });
 
   useEffect(() => {
     const savedActions = JSON.parse(localStorage.getItem('fulltank_actions') || '[]');
@@ -113,6 +115,7 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger }: { acti
       has_92: station.has_92,
       has_95: station.has_95,
       has_diesel: station.has_diesel,
+      has_super_diesel: station.has_super_diesel,
       queue_length: station.queue_length || 'Unknown'
     });
   };
@@ -124,6 +127,7 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger }: { acti
       has_92: editForm.has_92, 
       has_95: editForm.has_95, 
       has_diesel: editForm.has_diesel, 
+      has_super_diesel: editForm.has_super_diesel,
       queue_length: editForm.queue_length,
       confirms: 1, 
       last_updated: new Date().toISOString() 
@@ -146,7 +150,13 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger }: { acti
     e.stopPropagation();
     if (interactedStations.includes(id)) return;
     await supabase.from('stations').update({ 
-      has_92: false, has_95: false, has_diesel: false, queue_length: 'Unknown', confirms: 0, last_updated: new Date().toISOString() 
+      has_92: false, 
+      has_95: false, 
+      has_diesel: false, 
+      has_super_diesel: false,
+      queue_length: 'Unknown', 
+      confirms: 0, 
+      last_updated: new Date().toISOString() 
     }).eq('id', id);
     recordInteraction(id);
   };
@@ -160,7 +170,6 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger }: { acti
           : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"} 
       />
       
-      {/* Passing recenterTrigger here */}
       <LocationCenterer userLoc={userLoc} recenterTrigger={recenterTrigger} />
       <MapBoundsTracker setStations={setStations} />
 
@@ -173,7 +182,7 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger }: { acti
       {stations.map((station) => {
         let isAvailable = false;
         if (activeFilter === 'all') {
-          isAvailable = station.has_92 || station.has_95 || station.has_diesel;
+          isAvailable = station.has_92 || station.has_95 || station.has_diesel || station.has_super_diesel;
         } else {
           isAvailable = station[`has_${activeFilter}`];
           if (!isAvailable) return null;
@@ -211,6 +220,7 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger }: { acti
                       <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditForm({...editForm, has_92: !editForm.has_92})}} className={`px-3 py-2 rounded-md text-white text-sm font-semibold ${editForm.has_92 ? 'bg-green-600' : 'bg-red-600'}`}>92 Octane: {editForm.has_92 ? 'Yes' : 'No'}</button>
                       <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditForm({...editForm, has_95: !editForm.has_95})}} className={`px-3 py-2 rounded-md text-white text-sm font-semibold ${editForm.has_95 ? 'bg-green-600' : 'bg-red-600'}`}>95 Octane: {editForm.has_95 ? 'Yes' : 'No'}</button>
                       <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditForm({...editForm, has_diesel: !editForm.has_diesel})}} className={`px-3 py-2 rounded-md text-white text-sm font-semibold ${editForm.has_diesel ? 'bg-green-600' : 'bg-red-600'}`}>Diesel: {editForm.has_diesel ? 'Yes' : 'No'}</button>
+                      <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditForm({...editForm, has_super_diesel: !editForm.has_super_diesel})}} className={`px-3 py-2 rounded-md text-white text-sm font-semibold ${editForm.has_super_diesel ? 'bg-green-600' : 'bg-red-600'}`}>Super Diesel: {editForm.has_super_diesel ? 'Yes' : 'No'}</button>
                     </div>
                     
                     <p className="text-xs font-bold text-gray-700 mb-1">Queue Length:</p>
@@ -261,6 +271,9 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger }: { acti
                         </div>
                         <div className={`flex items-center justify-between px-3 py-1.5 rounded-md text-white text-sm font-semibold ${station.has_diesel ? 'bg-green-600' : 'bg-red-600'}`}>
                           <span>Diesel</span> <span>{station.has_diesel ? 'Available' : 'Empty'}</span>
+                        </div>
+                        <div className={`flex items-center justify-between px-3 py-1.5 rounded-md text-white text-sm font-semibold ${station.has_super_diesel ? 'bg-green-600' : 'bg-red-600'}`}>
+                          <span>Super Diesel</span> <span>{station.has_super_diesel ? 'Available' : 'Empty'}</span>
                         </div>
                       </div>
 
