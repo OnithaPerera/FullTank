@@ -7,11 +7,14 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../app/lib/supabase';
 import { Map, CheckCircle, AlertTriangle, MapPin, Clock, Users, Edit3 } from 'lucide-react';
 
+// --- Icon Definitions ---
 const greenIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png', iconSize: [25, 41], iconAnchor: [12, 41] });
 const redIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png', iconSize: [25, 41], iconAnchor: [12, 41] });
 const yellowIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png', iconSize: [25, 41], iconAnchor: [12, 41] });
 const blueIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png', iconSize: [25, 41], iconAnchor: [12, 41] });
+const staleIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png', iconSize: [25, 41], iconAnchor: [12, 41] });
 
+// --- Helper Functions ---
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371; 
   const dLat = (lat2 - lat1) * (Math.PI / 180);
@@ -35,10 +38,21 @@ function timeAgo(dateString: string) {
   return `${Math.round(diffHrs / 24)}d ago`;
 }
 
+function isStaleTimestamp(dateString: string | null | undefined) {
+  if (!dateString) return false;
+  const past = new Date(dateString);
+  if (Number.isNaN(past.getTime())) return false;
+  const diffMs = Date.now() - past.getTime();
+  const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
+  return diffMs > THREE_HOURS_MS;
+}
+
+// --- Map Components ---
 function LocationCenterer({ userLoc, recenterTrigger }: { userLoc: { lat: number, lng: number } | null, recenterTrigger: number }) {
   const map = useMap();
   const [hasCentered, setHasCentered] = useState(false);
 
+  // Initial load centering
   useEffect(() => {
     if (userLoc && !hasCentered) {
       map.flyTo([userLoc.lat, userLoc.lng], 14, { animate: true, duration: 1.5 });
@@ -46,6 +60,7 @@ function LocationCenterer({ userLoc, recenterTrigger }: { userLoc: { lat: number
     }
   }, [userLoc, hasCentered, map]);
 
+  // Manual recenter trigger
   useEffect(() => {
     if (userLoc && recenterTrigger > 0) {
       map.flyTo([userLoc.lat, userLoc.lng], 15, { animate: true, duration: 1.0 });
@@ -65,10 +80,13 @@ function MapBoundsTracker({ setStations }: { setStations: any }) {
       if (data) setStations(data);
     },
   });
+  
+  // Trigger initial fetch on mount
   useEffect(() => { map.fire('moveend'); }, [map]);
   return null;
 }
 
+// --- Main Export ---
 export default function MapBox({ activeFilter, isDark, recenterTrigger }: { activeFilter: string, isDark: boolean, recenterTrigger: number }) {
   const [stations, setStations] = useState<any[]>([]);
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
@@ -181,17 +199,27 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger }: { acti
 
       {stations.map((station) => {
         let isAvailable = false;
+        
+        // Handle filter logic
         if (activeFilter === 'all') {
           isAvailable = station.has_92 || station.has_95 || station.has_diesel || station.has_super_diesel;
         } else {
           isAvailable = station[`has_${activeFilter}`];
-          if (!isAvailable) return null;
+          if (!isAvailable) return null; // Hide marker entirely if the specific filter isn't met
         }
 
+        // Determine correct icon based on state
         let currentIcon = redIcon;
         if (isAvailable) {
-          if (station.confirms >= 3) currentIcon = greenIcon;
-          else currentIcon = yellowIcon; 
+          const isStale = isStaleTimestamp(station.last_updated);
+          
+          if (isStale) {
+            currentIcon = staleIcon;
+          } else if (station.confirms >= 3) {
+            currentIcon = greenIcon;
+          } else {
+            currentIcon = yellowIcon; 
+          }
         }
 
         const distanceStr = userLoc ? `${calculateDistance(userLoc.lat, userLoc.lng, station.lat, station.lng)} km` : '...';
