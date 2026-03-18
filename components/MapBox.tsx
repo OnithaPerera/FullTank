@@ -7,20 +7,30 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../app/lib/supabase';
 import { Map, CheckCircle, AlertTriangle, MapPin, Clock, Users, Edit3 } from 'lucide-react';
 
+// --- Icon Definitions ---
 const greenIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png', iconSize: [25, 41], iconAnchor: [12, 41] });
 const redIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png', iconSize: [25, 41], iconAnchor: [12, 41] });
 const yellowIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png', iconSize: [25, 41], iconAnchor: [12, 41] });
 const blueIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png', iconSize: [25, 41], iconAnchor: [12, 41] });
+const staleIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png', iconSize: [25, 41], iconAnchor: [12, 41] });
 
+<<<<<<< Updated upstream
 type ActiveFilter = 'all' | 'has_92' | 'has_95' | 'has_diesel';
 
+=======
+// --- Helper Functions ---
+>>>>>>> Stashed changes
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371; 
   const dLat = (lat2 - lat1) * (Math.PI / 180);
   const dLon = (lon2 - lon1) * (Math.PI / 180);
   const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+<<<<<<< Updated upstream
   return R * c;
+=======
+  return R * c; 
+>>>>>>> Stashed changes
 }
 
 function timeAgo(dateString: string) {
@@ -37,7 +47,20 @@ function timeAgo(dateString: string) {
   return `${Math.round(diffHrs / 24)}d ago`;
 }
 
+<<<<<<< Updated upstream
 // Updated to accept recenterTrigger
+=======
+function isStaleTimestamp(dateString: string | null | undefined) {
+  if (!dateString) return false;
+  const past = new Date(dateString);
+  if (Number.isNaN(past.getTime())) return false;
+  const diffMs = Date.now() - past.getTime();
+  const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
+  return diffMs > THREE_HOURS_MS;
+}
+
+// --- Map Components ---
+>>>>>>> Stashed changes
 function LocationCenterer({ userLoc, recenterTrigger }: { userLoc: { lat: number, lng: number } | null, recenterTrigger: number }) {
   const map = useMap();
   const [hasCentered, setHasCentered] = useState(false);
@@ -60,6 +83,17 @@ function LocationCenterer({ userLoc, recenterTrigger }: { userLoc: { lat: number
   return null;
 }
 
+// NEW: Center map specifically on a target station
+function TargetCenterer({ targetLoc, targetTrigger }: { targetLoc: { lat: number, lng: number } | null, targetTrigger: number }) {
+  const map = useMap();
+  useEffect(() => {
+    if (targetLoc && targetTrigger > 0) {
+      map.flyTo([targetLoc.lat, targetLoc.lng], 16, { animate: true, duration: 1.2 });
+    }
+  }, [targetLoc, targetTrigger, map]);
+  return null;
+}
+
 function MapBoundsTracker({ setStations }: { setStations: any }) {
   const map = useMapEvents({
     moveend: async () => {
@@ -70,10 +104,12 @@ function MapBoundsTracker({ setStations }: { setStations: any }) {
       if (data) setStations(data);
     },
   });
+  
   useEffect(() => { map.fire('moveend'); }, [map]);
   return null;
 }
 
+<<<<<<< Updated upstream
 // Added recenterTrigger prop
 export default function MapBox({
   activeFilter,
@@ -85,6 +121,23 @@ export default function MapBox({
   isDark: boolean;
   recenterTrigger: number;
   onUserLocChange?: (loc: { lat: number; lng: number }) => void;
+=======
+// --- Main Export ---
+export default function MapBox({ 
+  activeFilter, 
+  isDark, 
+  recenterTrigger,
+  targetLoc,
+  targetTrigger,
+  onUserLocChange 
+}: { 
+  activeFilter: string, 
+  isDark: boolean, 
+  recenterTrigger: number,
+  targetLoc: { lat: number; lng: number } | null,
+  targetTrigger: number,
+  onUserLocChange?: (loc: { lat: number, lng: number }) => void 
+>>>>>>> Stashed changes
 }) {
   const [stations, setStations] = useState<any[]>([]);
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
@@ -180,6 +233,7 @@ export default function MapBox({
       
       {/* Passing recenterTrigger here */}
       <LocationCenterer userLoc={userLoc} recenterTrigger={recenterTrigger} />
+      <TargetCenterer targetLoc={targetLoc} targetTrigger={targetTrigger} />
       <MapBoundsTracker setStations={setStations} />
 
       {userLoc && (
@@ -190,6 +244,8 @@ export default function MapBox({
 
       {stations.map((station) => {
         let isAvailable = false;
+        
+        // Handle filter logic
         if (activeFilter === 'all') {
           isAvailable = station.has_92 || station.has_95 || station.has_diesel;
         } else {
@@ -197,14 +253,25 @@ export default function MapBox({
           if (!isAvailable) return null;
         }
 
+        // Determine correct icon based on state
         let currentIcon = redIcon;
         if (isAvailable) {
-          if (station.confirms >= 3) currentIcon = greenIcon;
-          else currentIcon = yellowIcon; 
+          const isStale = isStaleTimestamp(station.last_updated);
+          if (isStale) {
+            currentIcon = staleIcon;
+          } else if (station.confirms >= 3) {
+            currentIcon = greenIcon;
+          } else {
+            currentIcon = yellowIcon; 
+          }
         }
 
         const distanceStr = userLoc ? `${calculateDistance(userLoc.lat, userLoc.lng, station.lat, station.lng).toFixed(1)} km` : '...';
+<<<<<<< Updated upstream
         const gMapsLink = `https://www.google.com/maps/dir/?api=1&destination=${station.lat},${station.lng}`;
+=======
+        const gMapsLink = `https://www.google.com/maps/dir/?api=1&destination=$${station.lat},${station.lng}`;
+>>>>>>> Stashed changes
         const hasInteracted = interactedStations.includes(station.id);
         const displayTime = station.confirms === 0 ? 'No updates' : timeAgo(station.last_updated);
         const isEditing = editingId === station.id;
