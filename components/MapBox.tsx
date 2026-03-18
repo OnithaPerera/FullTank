@@ -11,6 +11,7 @@ const greenIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/point
 const redIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png', iconSize: [25, 41], iconAnchor: [12, 41] });
 const yellowIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png', iconSize: [25, 41], iconAnchor: [12, 41] });
 const blueIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png', iconSize: [25, 41], iconAnchor: [12, 41] });
+const staleIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png', iconSize: [25, 41], iconAnchor: [12, 41] });
 
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371; 
@@ -33,6 +34,15 @@ function timeAgo(dateString: string) {
   if (diffMins < 60) return `${diffMins}m ago`;
   if (diffHrs < 24) return `${diffHrs}h ago`;
   return `${Math.round(diffHrs / 24)}d ago`;
+}
+
+function isStaleTimestamp(dateString: string | null | undefined) {
+  if (!dateString) return false;
+  const past = new Date(dateString);
+  if (Number.isNaN(past.getTime())) return false;
+  const diffMs = Date.now() - past.getTime();
+  const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
+  return diffMs > THREE_HOURS_MS;
 }
 
 // Updated to accept recenterTrigger
@@ -180,7 +190,10 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger }: { acti
         }
 
         let currentIcon = redIcon;
-        if (isAvailable) {
+        const isStale = isStaleTimestamp(station.last_updated);
+        if (isStale) {
+          currentIcon = staleIcon;
+        } else if (isAvailable) {
           if (station.confirms >= 3) currentIcon = greenIcon;
           else currentIcon = yellowIcon; 
         }
