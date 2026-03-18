@@ -7,21 +7,19 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../app/lib/supabase';
 import { Map, CheckCircle, AlertTriangle, MapPin, Clock, Users, Edit3 } from 'lucide-react';
 
-// --- Icon Definitions ---
 const greenIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png', iconSize: [25, 41], iconAnchor: [12, 41] });
 const redIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png', iconSize: [25, 41], iconAnchor: [12, 41] });
 const yellowIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png', iconSize: [25, 41], iconAnchor: [12, 41] });
 const blueIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png', iconSize: [25, 41], iconAnchor: [12, 41] });
 const staleIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png', iconSize: [25, 41], iconAnchor: [12, 41] });
 
-// --- Helper Functions ---
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371; 
   const dLat = (lat2 - lat1) * (Math.PI / 180);
   const dLon = (lon2 - lon1) * (Math.PI / 180);
   const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return (R * c).toFixed(1);
+  return R * c; 
 }
 
 function timeAgo(dateString: string) {
@@ -47,12 +45,10 @@ function isStaleTimestamp(dateString: string | null | undefined) {
   return diffMs > THREE_HOURS_MS;
 }
 
-// --- Map Components ---
 function LocationCenterer({ userLoc, recenterTrigger }: { userLoc: { lat: number, lng: number } | null, recenterTrigger: number }) {
   const map = useMap();
   const [hasCentered, setHasCentered] = useState(false);
 
-  // Initial load centering
   useEffect(() => {
     if (userLoc && !hasCentered) {
       map.flyTo([userLoc.lat, userLoc.lng], 14, { animate: true, duration: 1.5 });
@@ -60,13 +56,22 @@ function LocationCenterer({ userLoc, recenterTrigger }: { userLoc: { lat: number
     }
   }, [userLoc, hasCentered, map]);
 
-  // Manual recenter trigger
   useEffect(() => {
     if (userLoc && recenterTrigger > 0) {
       map.flyTo([userLoc.lat, userLoc.lng], 15, { animate: true, duration: 1.0 });
     }
   }, [recenterTrigger, userLoc, map]);
 
+  return null;
+}
+
+function TargetCenterer({ targetLoc, targetTrigger }: { targetLoc: { lat: number, lng: number } | null, targetTrigger: number }) {
+  const map = useMap();
+  useEffect(() => {
+    if (targetLoc && targetTrigger > 0) {
+      map.flyTo([targetLoc.lat, targetLoc.lng], 16, { animate: true, duration: 1.2 });
+    }
+  }, [targetLoc, targetTrigger, map]);
   return null;
 }
 
@@ -81,13 +86,25 @@ function MapBoundsTracker({ setStations }: { setStations: any }) {
     },
   });
   
-  // Trigger initial fetch on mount
   useEffect(() => { map.fire('moveend'); }, [map]);
   return null;
 }
 
-// --- Main Export ---
-export default function MapBox({ activeFilter, isDark, recenterTrigger }: { activeFilter: string, isDark: boolean, recenterTrigger: number }) {
+export default function MapBox({ 
+  activeFilter, 
+  isDark, 
+  recenterTrigger,
+  targetLoc,
+  targetTrigger,
+  onUserLocChange 
+}: { 
+  activeFilter: string, 
+  isDark: boolean, 
+  recenterTrigger: number,
+  targetLoc: { lat: number; lng: number } | null,
+  targetTrigger: number,
+  onUserLocChange?: (loc: { lat: number, lng: number }) => void 
+}) {
   const [stations, setStations] = useState<any[]>([]);
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [interactedStations, setInteractedStations] = useState<string[]>([]);
@@ -104,13 +121,19 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger }: { acti
   useEffect(() => {
     const savedActions = JSON.parse(localStorage.getItem('fulltank_actions') || '[]');
     setInteractedStations(savedActions);
+  }, []);
 
+  useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition((position) => {
-        setUserLoc({ lat: position.coords.latitude, lng: position.coords.longitude });
+        const nextLoc = { lat: position.coords.latitude, lng: position.coords.longitude };
+        setUserLoc(nextLoc);
+        onUserLocChange?.(nextLoc);
       });
     }
+  }, [onUserLocChange]);
 
+  useEffect(() => {
     const channel = supabase.channel('public:stations')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'stations' }, (payload) => {
         setStations((current) => current.map(st => st.id === payload.new.id ? payload.new : st));
@@ -189,6 +212,7 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger }: { acti
       />
       
       <LocationCenterer userLoc={userLoc} recenterTrigger={recenterTrigger} />
+      <TargetCenterer targetLoc={targetLoc} targetTrigger={targetTrigger} />
       <MapBoundsTracker setStations={setStations} />
 
       {userLoc && (
@@ -200,19 +224,16 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger }: { acti
       {stations.map((station) => {
         let isAvailable = false;
         
-        // Handle filter logic
         if (activeFilter === 'all') {
           isAvailable = station.has_92 || station.has_95 || station.has_diesel || station.has_super_diesel;
         } else {
-          isAvailable = station[`has_${activeFilter}`];
-          if (!isAvailable) return null; // Hide marker entirely if the specific filter isn't met
+          isAvailable = Boolean(station[activeFilter]);
+          if (!isAvailable) return null;
         }
 
-        // Determine correct icon based on state
         let currentIcon = redIcon;
         if (isAvailable) {
           const isStale = isStaleTimestamp(station.last_updated);
-          
           if (isStale) {
             currentIcon = staleIcon;
           } else if (station.confirms >= 3) {
@@ -222,8 +243,8 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger }: { acti
           }
         }
 
-        const distanceStr = userLoc ? `${calculateDistance(userLoc.lat, userLoc.lng, station.lat, station.lng)} km` : '...';
-        const gMapsLink = `https://www.google.com/maps/dir/?api=1&destination=${station.lat},${station.lng}`;
+        const distanceStr = userLoc ? `${calculateDistance(userLoc.lat, userLoc.lng, station.lat, station.lng).toFixed(1)} km` : '...';
+        const gMapsLink = `https://www.google.com/maps/dir/?api=1&destination=$${station.lat},${station.lng}`;
         const hasInteracted = interactedStations.includes(station.id);
         const displayTime = station.confirms === 0 ? 'No updates' : timeAgo(station.last_updated);
         const isEditing = editingId === station.id;
