@@ -9,12 +9,10 @@ const MapBox = dynamic(() => import('../components/MapBox'), { ssr: false });
 
 export default function Home() {
   const [activeFilter, setActiveFilter] = useState('all');
-  // CHANGED: Default isDark to false (light mode)
   const [isDark, setIsDark] = useState(false);
   const [recenterTrigger, setRecenterTrigger] = useState(0); 
 
   useEffect(() => {
-    // CHANGED: Only set to dark if they previously saved 'dark'
     const savedTheme = localStorage.getItem('fulltank_theme');
     if (savedTheme === 'dark') setIsDark(true);
   }, []);
@@ -53,6 +51,15 @@ export default function Home() {
       <div className="flex-grow relative z-0">
         <MapBox activeFilter={activeFilter} isDark={isDark} recenterTrigger={recenterTrigger} />
 
+        {/* Floating Standalone Locate Button */}
+        <button 
+          onClick={() => setRecenterTrigger(prev => prev + 1)} 
+          className={`absolute bottom-[6.9rem] sm:bottom-20 right-4 sm:right-6 z-[2000] p-2.5 rounded-full shadow-xl border transition-all duration-300 backdrop-blur-md ${isDark ? 'bg-slate-900/90 border-slate-700 shadow-black/50 text-blue-400 hover:bg-slate-800 hover:scale-105' : 'bg-white/90 border-gray-200 shadow-gray-400/50 text-blue-600 hover:bg-blue-50 hover:scale-105'}`} 
+          title="Locate Me"
+        >
+          <LocateFixed size={28} />
+        </button>
+
         {/* Floating Bottom Navigation Bar */}
         <div className={`absolute bottom-8 sm:bottom-6 left-1/2 -translate-x-1/2 z-[2000] w-max max-w-[95vw] flex items-center justify-between gap-1 p-2 rounded-full shadow-2xl transition-colors duration-300 border backdrop-blur-md ${isDark ? 'bg-slate-900/90 border-slate-700 shadow-black/50' : 'bg-white/90 border-gray-200 shadow-gray-400/50'}`}>
           
@@ -71,15 +78,11 @@ export default function Home() {
           <button onClick={() => setActiveFilter('diesel')} className={`flex items-center gap-1 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all ${activeFilter === 'diesel' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
             <Droplet size={14} className="hidden sm:block" /> Diesel
           </button>
-          
-          {/* Vertical Divider */}
-          <div className={`w-px h-6 mx-1 sm:mx-2 ${isDark ? 'bg-slate-700' : 'bg-gray-300'}`}></div>
 
-          {/* Locate Button */}
-          <button onClick={() => setRecenterTrigger(prev => prev + 1)} className={`p-2 rounded-full transition-all ${isDark ? 'text-blue-400 hover:bg-slate-800' : 'text-blue-600 hover:bg-blue-50'}`} title="Locate Me">
-            <LocateFixed size={20} />
+          <button onClick={() => setActiveFilter('super_diesel')} className={`flex items-center gap-1 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all ${activeFilter === 'super_diesel' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
+            <Droplet size={14} className="hidden sm:block text-yellow-500" /> Super Diesel
           </button>
-
+          
         </div>
       </div>
     </main>
