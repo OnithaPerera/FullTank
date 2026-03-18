@@ -4,14 +4,19 @@ import dynamic from 'next/dynamic';
 import { Fuel, Droplet, Moon, Sun, LocateFixed } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import NearestSheds from '@/components/NearestSheds';
 
 const MapBox = dynamic(() => import('../components/MapBox'), { ssr: false });
 
+type ActiveFilter = 'all' | 'has_92' | 'has_95' | 'has_diesel';
+
 export default function Home() {
-  const [activeFilter, setActiveFilter] = useState('all');
+  const [activeFilter, setActiveFilter] = useState<ActiveFilter>('all');
   // CHANGED: Default isDark to false (light mode)
   const [isDark, setIsDark] = useState(false);
   const [recenterTrigger, setRecenterTrigger] = useState(0); 
+  const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
+  const [showNearest, setShowNearest] = useState(false);
 
   useEffect(() => {
     // CHANGED: Only set to dark if they previously saved 'dark'
@@ -51,35 +56,56 @@ export default function Home() {
 
       {/* Map Area */}
       <div className="flex-grow relative z-0">
-        <MapBox activeFilter={activeFilter} isDark={isDark} recenterTrigger={recenterTrigger} />
+        <MapBox
+          activeFilter={activeFilter}
+          isDark={isDark}
+          recenterTrigger={recenterTrigger}
+          onUserLocChange={setUserLoc}
+        />
+        <NearestSheds
+          userLoc={userLoc}
+          activeFilter={activeFilter}
+          trigger={showNearest}
+          onClose={() => setShowNearest(false)}
+        />
 
         {/* Floating Bottom Navigation Bar */}
-        <div className={`absolute bottom-8 sm:bottom-6 left-1/2 -translate-x-1/2 z-[2000] w-max max-w-[95vw] flex items-center justify-between gap-1 p-2 rounded-full shadow-2xl transition-colors duration-300 border backdrop-blur-md ${isDark ? 'bg-slate-900/90 border-slate-700 shadow-black/50' : 'bg-white/90 border-gray-200 shadow-gray-400/50'}`}>
+        <div className={`absolute bottom-8 sm:bottom-6 left-1/2 z-[2000] flex max-w-[95vw] -translate-x-1/2 overflow-x-auto rounded-full border p-2 shadow-2xl backdrop-blur-md transition-colors duration-300 ${isDark ? 'bg-slate-900/90 border-slate-700 shadow-black/50' : 'bg-white/90 border-gray-200 shadow-gray-400/50'}`}>
+          <div className="flex w-max items-center justify-between gap-1">
           
-          <button onClick={() => setActiveFilter('all')} className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all ${activeFilter === 'all' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
-            All Fuels
-          </button>
+            <button onClick={() => setActiveFilter('all')} className={`flex-shrink-0 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all ${activeFilter === 'all' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
+              All Fuels
+            </button>
           
-          <button onClick={() => setActiveFilter('92')} className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all ${activeFilter === '92' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
-            92 Octane
-          </button>
+            <button onClick={() => setActiveFilter('has_92')} className={`flex-shrink-0 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all ${activeFilter === 'has_92' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
+              92 Octane
+            </button>
           
-          <button onClick={() => setActiveFilter('95')} className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all ${activeFilter === '95' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
-            95 Octane
-          </button>
+            <button onClick={() => setActiveFilter('has_95')} className={`flex-shrink-0 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all ${activeFilter === 'has_95' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
+              95 Octane
+            </button>
           
-          <button onClick={() => setActiveFilter('diesel')} className={`flex items-center gap-1 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all ${activeFilter === 'diesel' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
-            <Droplet size={14} className="hidden sm:block" /> Diesel
-          </button>
-          
-          {/* Vertical Divider */}
-          <div className={`w-px h-6 mx-1 sm:mx-2 ${isDark ? 'bg-slate-700' : 'bg-gray-300'}`}></div>
+            <button onClick={() => setActiveFilter('has_diesel')} className={`flex flex-shrink-0 items-center gap-1 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all ${activeFilter === 'has_diesel' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
+              <Droplet size={14} className="hidden sm:block" /> Diesel
+            </button>
 
-          {/* Locate Button */}
-          <button onClick={() => setRecenterTrigger(prev => prev + 1)} className={`p-2 rounded-full transition-all ${isDark ? 'text-blue-400 hover:bg-slate-800' : 'text-blue-600 hover:bg-blue-50'}`} title="Locate Me">
-            <LocateFixed size={20} />
-          </button>
+            <button
+              onClick={() => setShowNearest(true)}
+              disabled={!userLoc}
+              className="flex-shrink-0 rounded-full bg-red-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-slate-400"
+            >
+              Nearest
+            </button>
+          
+            {/* Vertical Divider */}
+            <div className={`mx-1 h-6 w-px flex-shrink-0 sm:mx-2 ${isDark ? 'bg-slate-700' : 'bg-gray-300'}`}></div>
 
+            {/* Locate Button */}
+            <button onClick={() => setRecenterTrigger(prev => prev + 1)} className={`flex-shrink-0 p-2 rounded-full transition-all ${isDark ? 'text-blue-400 hover:bg-slate-800' : 'text-blue-600 hover:bg-blue-50'}`} title="Locate Me">
+              <LocateFixed size={20} />
+            </button>
+
+          </div>
         </div>
       </div>
     </main>

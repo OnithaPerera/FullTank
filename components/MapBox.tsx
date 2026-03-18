@@ -12,13 +12,15 @@ const redIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi
 const yellowIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png', iconSize: [25, 41], iconAnchor: [12, 41] });
 const blueIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png', iconSize: [25, 41], iconAnchor: [12, 41] });
 
+type ActiveFilter = 'all' | 'has_92' | 'has_95' | 'has_diesel';
+
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371; 
   const dLat = (lat2 - lat1) * (Math.PI / 180);
   const dLon = (lon2 - lon1) * (Math.PI / 180);
   const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return (R * c).toFixed(1);
+  return R * c;
 }
 
 function timeAgo(dateString: string) {
@@ -73,7 +75,17 @@ function MapBoundsTracker({ setStations }: { setStations: any }) {
 }
 
 // Added recenterTrigger prop
-export default function MapBox({ activeFilter, isDark, recenterTrigger }: { activeFilter: string, isDark: boolean, recenterTrigger: number }) {
+export default function MapBox({
+  activeFilter,
+  isDark,
+  recenterTrigger,
+  onUserLocChange,
+}: {
+  activeFilter: ActiveFilter;
+  isDark: boolean;
+  recenterTrigger: number;
+  onUserLocChange?: (loc: { lat: number; lng: number }) => void;
+}) {
   const [stations, setStations] = useState<any[]>([]);
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [interactedStations, setInteractedStations] = useState<string[]>([]);
@@ -84,13 +96,19 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger }: { acti
   useEffect(() => {
     const savedActions = JSON.parse(localStorage.getItem('fulltank_actions') || '[]');
     setInteractedStations(savedActions);
+  }, []);
 
+  useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition((position) => {
-        setUserLoc({ lat: position.coords.latitude, lng: position.coords.longitude });
+        const nextLoc = { lat: position.coords.latitude, lng: position.coords.longitude };
+        setUserLoc(nextLoc);
+        onUserLocChange?.(nextLoc);
       });
     }
+  }, [onUserLocChange]);
 
+  useEffect(() => {
     const channel = supabase.channel('public:stations')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'stations' }, (payload) => {
         setStations((current) => current.map(st => st.id === payload.new.id ? payload.new : st));
@@ -175,7 +193,7 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger }: { acti
         if (activeFilter === 'all') {
           isAvailable = station.has_92 || station.has_95 || station.has_diesel;
         } else {
-          isAvailable = station[`has_${activeFilter}`];
+          isAvailable = Boolean(station[activeFilter]);
           if (!isAvailable) return null;
         }
 
@@ -185,7 +203,7 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger }: { acti
           else currentIcon = yellowIcon; 
         }
 
-        const distanceStr = userLoc ? `${calculateDistance(userLoc.lat, userLoc.lng, station.lat, station.lng)} km` : '...';
+        const distanceStr = userLoc ? `${calculateDistance(userLoc.lat, userLoc.lng, station.lat, station.lng).toFixed(1)} km` : '...';
         const gMapsLink = `https://www.google.com/maps/dir/?api=1&destination=${station.lat},${station.lng}`;
         const hasInteracted = interactedStations.includes(station.id);
         const displayTime = station.confirms === 0 ? 'No updates' : timeAgo(station.last_updated);
