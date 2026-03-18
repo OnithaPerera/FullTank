@@ -1,0 +1,77 @@
+
+> fulltank@0.1.0 dev
+> next dev --hostname 127.0.0.1 --port 3000
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://127.0.0.1:3000
+- Network:       http://127.0.0.1:3000
+
+✓ Starting...
+Creating turbopack project {
+  dir: 'C:\\Users\\suven\\OneDrive\\Documents\\FullTankProject - Copy\\FullTank-main',
+  testMode: true
+}
+✓ Ready in 2.9s
+ GET / 500 in 4.1s (compile: 3.2s, render: 840ms)
+ GET / 500 in 423ms (compile: 6ms, render: 417ms)
+ GET / 500 in 598ms (compile: 8ms, render: 590ms)
+ GET / 500 in 510ms (compile: 7ms, render: 502ms)
+✓ Compiled in 55ms
+ GET / 200 in 400ms (compile: 158ms, render: 242ms)
+✓ Compiled in 82ms
+ GET / 200 in 103ms (compile: 7ms, render: 96ms)
+✓ Compiled in 174ms
+ GET / 200 in 498ms (compile: 202ms, render: 295ms)
+✓ Compiled in 49ms
+ GET / 200 in 91ms (compile: 8ms, render: 83ms)
+✓ Compiled in 45ms
+✓ Compiled in 67ms
+✓ Compiled in 100ms
+ GET / 200 in 365ms (compile: 152ms, render: 213ms)
+ GET / 200 in 98ms (compile: 6ms, render: 92ms)
+ GET / 200 in 87ms (compile: 5ms, render: 82ms)
+ GET /admin 200 in 1065ms (compile: 791ms, render: 274ms)
+ GET /about 200 in 1038ms (compile: 897ms, render: 141ms)
+ GET / 200 in 57ms (compile: 3ms, render: 53ms)
+  Reload env: .env.local
+ GET / 200 in 115ms (compile: 77ms, render: 38ms)
+  Reload env: .env.local
+✓ Compiled in 284ms
+ GET / 200 in 272ms (compile: 238ms, render: 33ms)
+ GET / 200 in 128ms (compile: 3ms, render: 124ms)
+ GET / 200 in 40ms (compile: 3ms, render: 37ms)
+ GET / 200 in 58ms (compile: 7ms, render: 52ms)
+ GET /about 200 in 150ms (compile: 110ms, render: 39ms)
+ GET / 200 in 18ms (compile: 4ms, render: 14ms)
+✓ Compiled in 53ms
+ GET / 200 in 45ms (compile: 4ms, render: 41ms)
+✓ Compiled in 63ms
+ GET / 200 in 230ms (compile: 90ms, render: 141ms)
+✓ Compiled in 57ms
+ GET / 200 in 41ms (compile: 4ms, render: 37ms)
+✓ Compiled in 49ms
+ GET / 200 in 53ms (compile: 4ms, render: 49ms)
+ GET / 200 in 45ms (compile: 3ms, render: 42ms)
+ GET /about 200 in 25ms (compile: 6ms, render: 20ms)
+ GET / 200 in 17ms (compile: 2ms, render: 14ms)
+ GET / 200 in 46ms (compile: 4ms, render: 41ms)
+✓ Compiled in 34ms
+ GET / 200 in 234ms (compile: 85ms, render: 148ms)
+✓ Compiled in 48ms
+ GET / 200 in 203ms (compile: 90ms, render: 113ms)
+ GET / 200 in 58ms (compile: 6ms, render: 52ms)
+✓ Compiled in 118ms
+ GET / 200 in 242ms (compile: 196ms, render: 45ms)
+ GET / 200 in 423ms (compile: 110ms, render: 313ms)
+ GET / 200 in 315ms (compile: 6ms, render: 309ms)
+✓ Compiled in 35ms
+✓ Compiled in 41ms
+ GET /about 200 in 270ms (compile: 187ms, render: 83ms)
+ GET / 200 in 445ms (compile: 183ms, render: 262ms)
+ GET /admin 200 in 543ms (compile: 261ms, render: 282ms)
+✓ Compiled in 37ms
+ GET / 200 in 90ms (compile: 7ms, render: 82ms)
+ GET /about 200 in 494ms (compile: 16ms, render: 477ms)
+ GET /admin 200 in 507ms (compile: 336ms, render: 171ms)
+ GET / 200 in 19ms (compile: 3ms, render: 17ms)
+ GET / 200 in 39ms (compile: 4ms, render: 36ms)

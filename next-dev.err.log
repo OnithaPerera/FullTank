@@ -1,0 +1,50 @@
+⨯ Error: supabaseUrl is required.
+    at module evaluation (app\lib\supabase.ts:6:37)
+    at module evaluation (components\NearestSheds.tsx:4:1)
+    at module evaluation (app\page.tsx:7:1)
+  4 | const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  5 |
+> 6 | export const supabase = createClient(supabaseUrl, supabaseKey);
+    |                                     ^ {
+  digest: '1278608410'
+}
+⨯ Error: supabaseUrl is required.
+    at module evaluation (app\lib\supabase.ts:6:37)
+    at module evaluation (components\NearestSheds.tsx:4:1)
+    at module evaluation (app\page.tsx:7:1)
+  4 | const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  5 |
+> 6 | export const supabase = createClient(supabaseUrl, supabaseKey);
+    |                                     ^ {
+  digest: '1278608410'
+}
+⨯ Error: supabaseUrl is required.
+    at module evaluation (app\lib\supabase.ts:6:37)
+    at module evaluation (components\NearestSheds.tsx:4:1)
+    at module evaluation (app\page.tsx:7:1)
+  4 | const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  5 |
+> 6 | export const supabase = createClient(supabaseUrl, supabaseKey);
+    |                                     ^ {
+  digest: '1278608410'
+}
+⨯ Error: supabaseUrl is required.
+    at module evaluation (app\lib\supabase.ts:6:37)
+    at module evaluation (components\NearestSheds.tsx:4:1)
+    at module evaluation (app\page.tsx:7:1)
+  4 | const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  5 |
+> 6 | export const supabase = createClient(supabaseUrl, supabaseKey);
+    |                                     ^ {
+  digest: '1278608410'
+}
+Debugger listening on ws://127.0.0.1:9229/6d957841-6aac-41eb-816e-74076b03f91b
+For help, see: https://nodejs.org/en/docs/inspector
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+⚠ Fast Refresh had to perform a full reload when ./app/lib/supabase.ts changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+^C
