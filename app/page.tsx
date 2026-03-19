@@ -1,129 +1,188 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { Fuel, Droplet, Moon, Sun, LocateFixed, Navigation } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
-import NearestSheds from '@/components/NearestSheds';
-import type { FuelType } from '@/components/NearestSheds';
-
-type ActiveFilter = 'all' | FuelType;
+import { Fuel, Droplets, Moon, SunMedium, LocateFixed, Info, Navigation } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import MapLegend from '../components/MapLegend';
+import WelcomeModal from '../components/WelcomeModal';
+import NearestSheds from '../components/NearestSheds';
 
 const MapBox = dynamic(() => import('../components/MapBox'), { ssr: false });
 
+type FuelFilter = 'all' | '92' | '95' | 'diesel' | 'super_diesel';
+
+const THEME_STORAGE_KEY = 'fulltank_theme';
+const WELCOME_STORAGE_KEY = 'fulltank_welcome_seen';
+
+const filterOptions = [
+  { value: 'all' as FuelFilter, label: 'All Fuels', icon: Fuel },
+  { value: '92' as FuelFilter, label: 'Petrol 92', icon: Fuel },
+  { value: '95' as FuelFilter, label: 'Petrol 95', icon: Fuel },
+  { value: 'diesel' as FuelFilter, label: 'Diesel', icon: Droplets },
+  { value: 'super_diesel' as FuelFilter, label: 'Super Diesel', icon: Droplets },
+];
+
+const fuelKeyToFilter: Record<string, FuelFilter> = {
+  has_92: '92',
+  has_95: '95',
+  has_diesel: 'diesel',
+  has_super_diesel: 'super_diesel'
+};
+
 export default function Home() {
-  const [activeFilter, setActiveFilter] = useState<ActiveFilter>('all');
-  const [isDark, setIsDark] = useState(false);
-  const [recenterTrigger, setRecenterTrigger] = useState(0); 
+  const [activeFilter, setActiveFilter] = useState<FuelFilter>('all');
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem(THEME_STORAGE_KEY) === 'dark';
+  });
+
+  const [recenterTrigger, setRecenterTrigger] = useState(0);
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
-  
+
   const [showNearest, setShowNearest] = useState(false);
   const [targetLoc, setTargetLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [targetTrigger, setTargetTrigger] = useState(0);
 
+  const [showWelcome, setShowWelcome] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return !localStorage.getItem(WELCOME_STORAGE_KEY);
+  });
+
   useEffect(() => {
-    const savedTheme = localStorage.getItem('fulltank_theme');
-    if (savedTheme === 'dark') setIsDark(true);
-  }, []);
+    document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+    const themeMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeMeta) {
+      themeMeta.setAttribute('content', isDark ? '#07111a' : '#f4efe8');
+    }
+  }, [isDark]);
 
   const toggleTheme = () => {
-    const newTheme = !isDark;
-    setIsDark(newTheme);
-    localStorage.setItem('fulltank_theme', newTheme ? 'dark' : 'light');
+    const nextTheme = !isDark;
+    setIsDark(nextTheme);
+    localStorage.setItem(THEME_STORAGE_KEY, nextTheme ? 'dark' : 'light');
   };
 
-  const handleShowStation = (lat: number, lng: number, fuelType: FuelType) => {
+  const dismissWelcome = () => {
+    localStorage.setItem(WELCOME_STORAGE_KEY, '1');
+    setShowWelcome(false);
+  };
+
+  const handleShowStation = (lat: number, lng: number, fuelKey: string) => {
     setTargetLoc({ lat, lng });
     setTargetTrigger(prev => prev + 1);
-    setActiveFilter(fuelType); 
+    setActiveFilter(fuelKeyToFilter[fuelKey]);
   };
 
   return (
-    <main className={`flex h-[100dvh] flex-col overflow-hidden transition-colors duration-300 ${isDark ? 'bg-slate-950 text-white' : 'bg-gray-100 text-slate-900'}`}>
-      
-      {/* Header */}
-      <header className={`flex flex-none items-center justify-between border-b p-4 shadow-md transition-colors duration-300 ${isDark ? 'bg-slate-900 border-red-900/30' : 'bg-white border-red-200'}`}>
-        <div className="flex items-center gap-2">
-          <div className="rounded-full bg-red-600 p-2">
-            <Fuel size={24} className="text-white" />
+    <main className={`${isDark ? 'theme-dark' : 'theme-light'} ui-page`}>
+      <div className="flex h-[100dvh] w-full flex-col overflow-hidden">
+        <header className="ui-panel flex-none rounded-none border-x-0 border-t-0 px-3.5 py-3 sm:px-4.5 sm:py-3.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+              <div className="ui-brand-mark flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] sm:h-12 sm:w-12 sm:rounded-[16px]">
+                <Image src="/logo.svg" alt="FullTank logo" width={28} height={28} priority className="sm:w-[34px] sm:h-[34px]" />
+              </div>
+              <div className="min-w-0">
+                <p className="ui-kicker hidden sm:block">Live Fuel Map</p>
+                <h1 className="text-[1.15rem] font-bold tracking-tight sm:mt-0.5 sm:text-[1.35rem] leading-none sm:leading-tight">
+                  Full<span className="text-[var(--ui-brand)]">Tank</span>
+                </h1>
+                <p className="ui-text-muted mt-1 max-w-[18rem] text-[13px] leading-4 hidden sm:block sm:max-w-none sm:text-sm sm:leading-5">
+                  Fast community fuel updates built for quick map scanning.
+                </p>
+              </div>
+            </div>
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+              <button
+                onClick={() => setShowNearest(true)}
+                className="ui-button-neutral text-[var(--ui-brand)] border-[var(--ui-brand-muted)] !px-2.5 sm:!px-3.5"
+                title="Nearby sheds"
+              >
+                <Navigation size={18} className="sm:w-4 sm:h-4 shrink-0" />
+                {/* FIX: Removed 'hidden sm:inline' so Nearby shows on mobile */}
+                <span className="font-semibold text-[13px] sm:text-sm">Nearby</span>
+              </button>
+              <Link href="/about" className="ui-button-neutral !px-2.5 sm:!px-3.5" title="About and reports">
+                <Info size={18} className="sm:w-4 sm:h-4 shrink-0" />
+                <span className="hidden sm:inline font-semibold">About</span>
+              </Link>
+              <button
+                type="button"
+                onClick={toggleTheme}
+                aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+                className="ui-button-icon shrink-0"
+              >
+                {isDark ? <SunMedium size={18} /> : <Moon size={18} />}
+              </button>
+            </div>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-red-600">Full<span className={isDark ? "text-white" : "text-slate-900"}>Tank</span></h1>
-        </div>
-        
-        <div className="flex items-center gap-2 sm:gap-3">
-          
-          <button 
-            onClick={() => setShowNearest(true)} 
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold transition-all ${isDark ? 'bg-blue-900/40 text-blue-400 hover:bg-blue-900/60' : 'bg-blue-100 text-blue-700 hover:bg-blue-200'}`}
+          <div className="mt-2.5 hidden sm:flex flex-wrap gap-1.5">
+            <span className="ui-badge">Reliable community signals</span>
+            <span className="ui-badge">Lightweight on mobile</span>
+            <span className="ui-badge">Tap markers to confirm or update</span>
+          </div>
+        </header>
+
+        <section className="relative min-h-0 flex-1 overflow-hidden">
+          <MapBox
+            activeFilter={activeFilter}
+            isDark={isDark}
+            recenterTrigger={recenterTrigger}
+            targetLoc={targetLoc}
+            targetTrigger={targetTrigger}
+            onUserLocChange={setUserLoc}
+          />
+
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-[2000] flex justify-end p-2.5 sm:p-3">
+            <div className="pointer-events-auto">
+              <MapLegend />
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setRecenterTrigger((value) => value + 1)}
+            className="ui-button-icon absolute bottom-[calc(env(safe-area-inset-bottom)+5.15rem)] right-3 z-[2000] h-11 w-11 shadow-lg sm:bottom-[5.15rem] sm:right-3.5"
+            title="Locate me"
+            aria-label="Locate me"
           >
-            <Navigation size={16} /> <span className="text-xs">Nearby</span>
+            <LocateFixed size={18} />
           </button>
 
-          <Link href="/about" className={`flex items-center px-3 py-1.5 rounded-full transition-colors ${isDark ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}>
-            <span className="text-xs font-bold">About</span>
-          </Link>
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2000]">
+            <div className="pointer-events-auto absolute bottom-[calc(env(safe-area-inset-bottom)+0.6rem)] left-1/2 flex max-w-[96vw] -translate-x-1/2 items-center justify-start sm:justify-center gap-1.5 overflow-x-auto no-scrollbar rounded-full p-1.5 ui-dock">
+              {filterOptions.map((filter) => {
+                const Icon = filter.icon;
+                const isActive = activeFilter === filter.value;
 
-          <button onClick={toggleTheme} className={`p-2 rounded-full transition-colors ${isDark ? 'bg-slate-800 text-yellow-400 hover:bg-slate-700' : 'bg-gray-200 text-slate-700 hover:bg-gray-300'}`}>
-            {isDark ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
-        </div>
-      </header>
-
-      {/* Map Area */}
-      <div className="flex-grow relative z-0">
-        <MapBox 
-          activeFilter={activeFilter} 
-          isDark={isDark} 
-          recenterTrigger={recenterTrigger}
-          targetLoc={targetLoc}
-          targetTrigger={targetTrigger}
-          onUserLocChange={setUserLoc} 
-        />
-        
-        <NearestSheds
-          userLoc={userLoc}
-          trigger={showNearest}
-          isDark={isDark}
-          onClose={() => setShowNearest(false)}
-          onShowStation={handleShowStation}
-        />
-
-        {/* Floating Standalone Locate Button */}
-        <button 
-          onClick={() => setRecenterTrigger(prev => prev + 1)} 
-          className={`absolute bottom-[5.5rem] sm:bottom-20 right-4 sm:right-6 z-[2000] p-2.5 rounded-full shadow-xl border transition-all duration-300 backdrop-blur-md ${isDark ? 'bg-slate-900/90 border-slate-700 shadow-black/50 text-blue-400 hover:bg-slate-800 hover:scale-105' : 'bg-white/90 border-gray-200 shadow-gray-400/50 text-blue-600 hover:bg-blue-50 hover:scale-105'}`} 
-          title="Locate Me"
-        >
-          <LocateFixed size={22} />
-        </button>
-
-        {/* Floating Bottom Navigation Bar */}
-        <div className={`absolute bottom-8 sm:bottom-6 left-1/2 z-[2000] flex w-[98vw] sm:w-max -translate-x-1/2 rounded-full border p-1 sm:p-2 shadow-2xl backdrop-blur-md transition-colors duration-300 ${isDark ? 'bg-slate-900/90 border-slate-700 shadow-black/50' : 'bg-white/90 border-gray-200 shadow-gray-400/50'}`}>
-          <div className="flex w-full items-center justify-between gap-0.5 sm:gap-1">
-          
-            <button onClick={() => setActiveFilter('all')} className={`flex-1 px-1 sm:px-4 py-2 rounded-full text-[12px] sm:text-xs font-bold whitespace-nowrap text-center transition-all ${activeFilter === 'all' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
-              All Fuels
-            </button>
-            
-            <button onClick={() => setActiveFilter('has_92')} className={`flex-1 px-1 sm:px-4 py-2 rounded-full text-[12px] sm:text-xs font-bold whitespace-nowrap text-center transition-all ${activeFilter === 'has_92' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
-              92 Octane
-            </button>
-            
-            <button onClick={() => setActiveFilter('has_95')} className={`flex-1 px-1 sm:px-4 py-2 rounded-full text-[12px] sm:text-xs font-bold whitespace-nowrap text-center transition-all ${activeFilter === 'has_95' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
-              95 Octane
-            </button>
-            
-            <button onClick={() => setActiveFilter('has_diesel')} className={`flex-1 flex items-center justify-center gap-0.5 px-1 sm:px-4 py-2 rounded-full text-[12px] sm:text-xs font-bold whitespace-nowrap text-center transition-all ${activeFilter === 'has_diesel' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
-              <Droplet size={12} className="hidden sm:block" /> Diesel
-            </button>
-
-            <button onClick={() => setActiveFilter('has_super_diesel')} className={`flex-1 flex items-center justify-center gap-0.5 px-1 sm:px-4 py-2 rounded-full text-[12px] sm:text-xs font-bold whitespace-nowrap text-center transition-all ${activeFilter === 'has_super_diesel' ? 'bg-red-600 text-white shadow-md scale-105' : (isDark ? 'text-gray-300 hover:bg-slate-800' : 'text-slate-700 hover:bg-gray-100')}`}>
-              <Droplet size={12} className="hidden sm:block text-yellow-500" /> Super Diesel
-            </button>
-
+                return (
+                  <button
+                    key={filter.value}
+                    type="button"
+                    onClick={() => setActiveFilter(filter.value)}
+                    aria-pressed={isActive}
+                    className={`ui-control-button shrink-0 flex items-center justify-center px-3 py-2 text-[11px] sm:text-sm whitespace-nowrap transition-all ${isActive ? '!bg-red-600 !border-red-600 !text-white scale-[1.02] shadow-md' : ''}`}
+                  >
+                    <Icon size={14} className="hidden sm:block shrink-0" />
+                    <span>{filter.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        </section>
       </div>
+
+      <NearestSheds
+        userLoc={userLoc}
+        trigger={showNearest}
+        isDark={isDark}
+        onClose={() => setShowNearest(false)}
+        onShowStation={handleShowStation}
+      />
+      <WelcomeModal open={showWelcome} onClose={dismissWelcome} />
     </main>
   );
 }
