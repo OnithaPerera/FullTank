@@ -19,22 +19,18 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
+// --- ICONS ---
 const greenIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png', iconSize: [25, 41], iconAnchor: [12, 41] });
 const redIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png', iconSize: [25, 41], iconAnchor: [12, 41] });
 const yellowIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png', iconSize: [25, 41], iconAnchor: [12, 41] });
 const blueIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png', iconSize: [25, 41], iconAnchor: [12, 41] });
 const staleIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png', iconSize: [25, 41], iconAnchor: [12, 41] });
 
+// --- TYPES & DATA ---
 const queueOptions = ['Unknown', 'Short (0-15m)', 'Medium (15-45m)', 'Long (45m+)'];
-
 type FuelKey = 'has_92' | 'has_95' | 'has_diesel' | 'has_super_diesel';
-
 type FuelType = { key: FuelKey; filterValue: string; label: string; icon: LucideIcon; };
-
-type Station = {
-  id: string; name: string; lat: number; lng: number; has_92: boolean; has_95: boolean; has_diesel: boolean; has_super_diesel: boolean; queue_length: string | null; confirms: number | null; last_updated: string | null;
-};
-
+type Station = { id: string; name: string; lat: number; lng: number; has_92: boolean; has_95: boolean; has_diesel: boolean; has_super_diesel: boolean; queue_length: string | null; confirms: number | null; last_updated: string | null; };
 type EditFormState = { has_92: boolean; has_95: boolean; has_diesel: boolean; has_super_diesel: boolean; queue_length: string; };
 
 const fuelTypes: FuelType[] = [
@@ -51,6 +47,7 @@ const stationStatusMeta = {
   stale: { label: 'Stale', description: 'The last report is older than 3 hours, so availability may have changed.', badgeClass: 'border-slate-200 bg-slate-100 text-slate-700', iconWrapClass: 'bg-slate-200 text-slate-700', progressClass: 'bg-slate-400' },
 };
 
+// --- HELPER FUNCTIONS ---
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   const radiusKm = 6371;
   const dLat = (lat2 - lat1) * (Math.PI / 180);
@@ -83,6 +80,7 @@ function isStaleTimestamp(dateString: string | null | undefined) {
   return diffMs > threeHoursMs;
 }
 
+// --- MAP COMPONENTS (MUST BE OUTSIDE MAPBOX) ---
 function LocationCenterer({ userLoc, recenterTrigger }: { userLoc: { lat: number; lng: number } | null; recenterTrigger: number; }) {
   const map = useMap();
   const hasCenteredRef = useRef(false);
@@ -103,7 +101,6 @@ function LocationCenterer({ userLoc, recenterTrigger }: { userLoc: { lat: number
   return null;
 }
 
-// RESTORED: Center map specifically on a target station from NearestSheds
 function TargetCenterer({ targetLoc, targetTrigger }: { targetLoc: { lat: number, lng: number } | null, targetTrigger: number }) {
   const map = useMap();
   useEffect(() => {
@@ -132,6 +129,7 @@ function StableBoundsTracker({ setStations, pauseBoundsUpdates, onMapClick }: { 
   return null;
 }
 
+// --- MAIN EXPORT ---
 export default function MapBox({
   activeFilter,
   isDark,
@@ -166,7 +164,7 @@ export default function MapBox({
       navigator.geolocation.getCurrentPosition((position) => {
         const nextLoc = { lat: position.coords.latitude, lng: position.coords.longitude };
         setUserLoc(nextLoc);
-        onUserLocChange?.(nextLoc); // RESTORED
+        onUserLocChange?.(nextLoc);
       });
     }
 
@@ -177,7 +175,7 @@ export default function MapBox({
       }).subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [onUserLocChange]); // RESTORED dependency
+  }, [onUserLocChange]);
 
   const recordInteraction = (id: string) => {
     if (interactedStations.includes(id)) return;
@@ -235,7 +233,7 @@ export default function MapBox({
       />
 
       <LocationCenterer userLoc={userLoc} recenterTrigger={recenterTrigger} />
-      <TargetCenterer targetLoc={targetLoc} targetTrigger={targetTrigger} /> {/* RESTORED */}
+      <TargetCenterer targetLoc={targetLoc} targetTrigger={targetTrigger} />
       <StableBoundsTracker setStations={setStations} pauseBoundsUpdates={selectedStationId !== null} onMapClick={() => setSelectedStationId(null)} />
 
       {userLoc && (

@@ -20,8 +20,8 @@ export default function WelcomeModal({ open, onClose }: WelcomeModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-[5000] flex items-end justify-center bg-slate-950/40 p-4 sm:items-center">
-      <div className="ui-panel-strong w-full max-w-sm rounded-[28px] px-5 py-5 sm:px-6">
+    <div className="fixed inset-0 z-[5000] flex items-center justify-center bg-slate-950/50 backdrop-blur-sm p-3 sm:p-4">
+      <div className="ui-panel-strong w-full max-w-sm max-h-[85dvh] overflow-y-auto rounded-[28px] px-5 py-5 sm:px-6 no-scrollbar shadow-2xl">
         <p className="ui-kicker">First Visit</p>
         <h2 className="mt-2 text-2xl font-semibold tracking-tight">How the map works</h2>
         <p className="ui-text-muted mt-2 text-sm leading-6">
@@ -36,7 +36,7 @@ export default function WelcomeModal({ open, onClose }: WelcomeModalProps) {
                 <span className={`mt-1 h-3 w-3 shrink-0 rounded-full ${item.color}`}></span>
                 <div>
                   <p className="text-sm font-semibold">{item.label}</p>
-                  <p className="ui-text-muted mt-1 text-sm leading-5">{item.description}</p>
+                  <p className="ui-text-muted mt-1 text-[13px] sm:text-sm leading-5">{item.description}</p>
                 </div>
               </div>
             </div>
@@ -45,7 +45,7 @@ export default function WelcomeModal({ open, onClose }: WelcomeModalProps) {
 
         <div className="ui-panel-muted mt-4 rounded-[22px] px-4 py-3.5">
           <p className="text-sm font-semibold">Trust and confirmations</p>
-          <p className="ui-text-muted mt-1 text-sm leading-5">
+          <p className="ui-text-muted mt-1 text-[13px] sm:text-sm leading-5">
             Yellow markers turn green after 3 separate users tap <strong>Confirm</strong>. If the station changes,
             use <strong>Update Station Data</strong> to send a fresh report.
           </p>

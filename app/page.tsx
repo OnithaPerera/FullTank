@@ -81,56 +81,71 @@ export default function Home() {
   return (
     <main className={`${isDark ? 'theme-dark' : 'theme-light'} ui-page`}>
       <div className="flex h-[100dvh] w-full flex-col overflow-hidden">
+        
+        {/* --- REFACTORED HEADER --- */}
         <header className="ui-panel flex-none rounded-none border-x-0 border-t-0 px-3.5 py-3 sm:px-4.5 sm:py-3.5">
-          <div className="flex items-start justify-between gap-2.5">
+          <div className="flex items-center justify-between gap-2">
+            
+            {/* Left Side: Logo & Title */}
             <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
-              <div className="ui-brand-mark h-11 w-11 shrink-0 rounded-[16px] sm:h-12 sm:w-12">
-                <Image src="/logo.svg" alt="FullTank logo" width={34} height={34} priority />
+              <div className="ui-brand-mark flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] sm:h-12 sm:w-12 sm:rounded-[16px]">
+                <Image src="/logo.svg" alt="FullTank logo" width={28} height={28} priority className="sm:w-[34px] sm:h-[34px]" />
               </div>
 
               <div className="min-w-0">
-                <p className="ui-kicker">Live Fuel Map</p>
-                <h1 className="mt-0.5 text-[1.1rem] font-semibold tracking-tight sm:text-[1.35rem]">
+                <p className="ui-kicker hidden sm:block">Live Fuel Map</p>
+                <h1 className="text-[1.15rem] font-bold tracking-tight sm:mt-0.5 sm:text-[1.35rem] leading-none sm:leading-tight">
                   Full<span className="text-[var(--ui-brand)]">Tank</span>
                 </h1>
-                <p className="ui-text-muted mt-1 max-w-[18rem] text-[13px] leading-4 sm:max-w-none sm:text-sm sm:leading-5">
+                {/* Hidden on mobile to prevent cramping */}
+                <p className="ui-text-muted mt-1 max-w-[18rem] text-[13px] leading-4 hidden sm:block sm:max-w-none sm:text-sm sm:leading-5">
                   Fast community fuel updates built for quick map scanning.
                 </p>
               </div>
             </div>
 
-            <div className="flex shrink-0 items-center gap-2">
-              {/* RESTORED: Nearby Button styled with the new UI system */}
-              <button onClick={() => setShowNearest(true)} className="ui-button-neutral hidden sm:inline-flex text-[var(--ui-brand)] border-[var(--ui-brand-muted)]">
-                <Navigation size={16} />
-                Nearby
-              </button>
-              <button onClick={() => setShowNearest(true)} aria-label="Nearby sheds" className="ui-button-icon sm:hidden text-[var(--ui-brand)]">
-                <Navigation size={18} />
+            {/* Right Side: Actions */}
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+              
+              {/* Nearby Button (Combined DOM element to prevent duplicates) */}
+              <button 
+                onClick={() => setShowNearest(true)} 
+                className="ui-button-neutral text-[var(--ui-brand)] border-[var(--ui-brand-muted)] !px-2.5 sm:!px-3.5"
+                title="Nearby sheds"
+              >
+                <Navigation size={18} className="sm:w-4 sm:h-4 shrink-0" />
+                <span className="hidden sm:inline font-semibold">Nearby</span>
               </button>
 
-              <Link href="/about" className="ui-button-neutral hidden sm:inline-flex">
-                <Info size={16} />
-                About
-              </Link>
-              <Link href="/about" aria-label="About and reports" className="ui-button-icon sm:hidden">
-                <Info size={18} />
+              {/* About Button (Combined DOM element) */}
+              <Link href="/about" className="ui-button-neutral !px-2.5 sm:!px-3.5" title="About and reports">
+                <Info size={18} className="sm:w-4 sm:h-4 shrink-0" />
+                <span className="hidden sm:inline font-semibold">About</span>
               </Link>
 
+              {/* Theme Toggle */}
               <button
                 type="button"
                 onClick={toggleTheme}
                 aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
-                className="ui-button-icon"
+                className="ui-button-icon shrink-0"
               >
                 {isDark ? <SunMedium size={18} /> : <Moon size={18} />}
               </button>
+
             </div>
+          </div>
+
+          {/* Badges - Hidden on mobile to save vertical space */}
+          <div className="mt-2.5 hidden sm:flex flex-wrap gap-1.5">
+            <span className="ui-badge">Reliable community signals</span>
+            <span className="ui-badge">Lightweight on mobile</span>
+            <span className="ui-badge">Tap markers to confirm or update</span>
           </div>
         </header>
 
+        {/* --- MAP AREA --- */}
         <section className="relative min-h-0 flex-1 overflow-hidden">
-          {/* RESTORED: TargetLoc and userLoc props */}
           <MapBox 
             activeFilter={activeFilter} 
             isDark={isDark} 
@@ -156,8 +171,9 @@ export default function Home() {
             <LocateFixed size={18} />
           </button>
 
+          {/* --- BOTTOM FILTER BAR --- */}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2000]">
-            <div className="pointer-events-auto absolute bottom-[calc(env(safe-area-inset-bottom)+0.6rem)] left-1/2 flex max-w-[calc(100vw-1rem)] -translate-x-1/2 items-center gap-1.5 overflow-x-auto no-scrollbar rounded-full p-1.5 sm:max-w-[calc(100vw-1.5rem)] ui-dock">
+            <div className="pointer-events-auto absolute bottom-[calc(env(safe-area-inset-bottom)+0.6rem)] left-1/2 flex max-w-[96vw] -translate-x-1/2 items-center justify-start sm:justify-center gap-1.5 overflow-x-auto no-scrollbar rounded-full p-1.5 ui-dock">
               {filterOptions.map((filter) => {
                 const Icon = filter.icon;
                 const isActive = activeFilter === filter.value;
@@ -168,9 +184,10 @@ export default function Home() {
                     type="button"
                     onClick={() => setActiveFilter(filter.value)}
                     aria-pressed={isActive}
-                    className={`ui-control-button ${isActive ? 'ui-control-button-active' : ''}`}
+                    // CHANGED: Forced the brand red background, border, and white text for the active state
+                    className={`ui-control-button shrink-0 flex items-center justify-center px-3 py-2 text-[11px] sm:text-sm whitespace-nowrap transition-all ${isActive ? '!bg-red-600 !border-red-600 !text-white scale-[1.02] shadow-md' : ''}`}
                   >
-                    <Icon size={15} />
+                    <Icon size={14} className="hidden sm:block shrink-0" />
                     <span>{filter.label}</span>
                   </button>
                 );
