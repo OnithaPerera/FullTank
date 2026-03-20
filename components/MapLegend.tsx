@@ -38,23 +38,21 @@ export default function MapLegend() {
   }, []);
 
   return (
-    <div ref={legendRef} className="relative flex flex-col items-end">
+    <div ref={legendRef} className="relative flex min-h-11 flex-col items-end">
       
       {/* Minimized Button State */}
-      {!isOpen && (
-        <button
-          onClick={() => setIsOpen(true)}
-          className="ui-panel flex items-center gap-2 rounded-full px-3 py-2.5 shadow-md transition-transform hover:scale-105 active:scale-95"
-          aria-label="Open Map Guide"
-        >
-          <Info size={16} className="text-[var(--ui-brand)]" />
-          <span className="text-xs font-bold text-[var(--ui-text)]">Map Guide</span>
-        </button>
-      )}
+      <button
+        onClick={() => setIsOpen(true)}
+        data-state={!isOpen ? 'open' : 'closed'}
+        className="ui-panel ui-floating-surface ui-pressable ui-presence flex items-center gap-2 rounded-full px-3 py-2.5 shadow-md"
+        aria-label="Open Map Guide"
+      >
+        <Info size={16} className="text-[var(--ui-brand)]" />
+        <span className="text-xs font-bold text-[var(--ui-text)]">Map Guide</span>
+      </button>
 
       {/* Expanded Panel State */}
-      {isOpen && (
-        <div className="ui-panel w-[min(17rem,calc(100vw-1rem))] rounded-[20px] px-3.5 py-3 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
+      <div data-state={isOpen ? 'open' : 'closed'} className="ui-panel ui-floating-surface ui-presence absolute right-0 top-0 w-[min(17rem,calc(100vw-1rem))] rounded-[20px] px-3.5 py-3 shadow-xl">
           
           {/* Header */}
           <div className="flex items-start justify-between gap-3">
@@ -97,7 +95,6 @@ export default function MapLegend() {
           </div>
 
         </div>
-      )}
     </div>
   );
 }

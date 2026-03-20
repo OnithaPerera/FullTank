@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Fuel, Droplets, Moon, SunMedium, LocateFixed, Info, Navigation } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import MapLegend from '../components/MapLegend';
 import WelcomeModal from '../components/WelcomeModal';
 import NearestSheds from '../components/NearestSheds';
@@ -33,10 +33,13 @@ const fuelKeyToFilter: Record<string, FuelFilter> = {
 
 export default function Home() {
   const [activeFilter, setActiveFilter] = useState<FuelFilter>('all');
+  const [filterHighlight, setFilterHighlight] = useState<{ left: number; width: number } | null>(null);
   const [isDark, setIsDark] = useState(() => {
     if (typeof window === 'undefined') return false;
     return localStorage.getItem(THEME_STORAGE_KEY) === 'dark';
   });
+  const filterBarRef = useRef<HTMLDivElement | null>(null);
+  const filterButtonRefs = useRef<Partial<Record<FuelFilter, HTMLButtonElement | null>>>({});
 
   const [recenterTrigger, setRecenterTrigger] = useState(0);
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
@@ -75,10 +78,28 @@ export default function Home() {
     setActiveFilter(fuelKeyToFilter[fuelKey]);
   };
 
+  useLayoutEffect(() => {
+    const updateFilterHighlight = () => {
+      const activeButton = filterButtonRefs.current[activeFilter];
+      const filterBar = filterBarRef.current;
+
+      if (!activeButton || !filterBar) return;
+
+      setFilterHighlight({
+        left: activeButton.offsetLeft,
+        width: activeButton.offsetWidth,
+      });
+    };
+
+    updateFilterHighlight();
+    window.addEventListener('resize', updateFilterHighlight);
+    return () => window.removeEventListener('resize', updateFilterHighlight);
+  }, [activeFilter]);
+
   return (
     <main className={`${isDark ? 'theme-dark' : 'theme-light'} ui-page`}>
       <div className="flex h-[100dvh] w-full flex-col overflow-hidden">
-        <header className="ui-panel flex-none rounded-none border-x-0 border-t-0 px-3.5 py-3 sm:px-4.5 sm:py-3.5">
+        <header className="ui-panel ui-enter flex-none rounded-none border-x-0 border-t-0 px-3.5 py-3 sm:px-4.5 sm:py-3.5">
           <div className="flex items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
               <div className="ui-brand-mark flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] sm:h-12 sm:w-12 sm:rounded-[16px]">
@@ -144,7 +165,7 @@ export default function Home() {
           <button
             type="button"
             onClick={() => setRecenterTrigger((value) => value + 1)}
-            className="ui-button-icon absolute bottom-[calc(env(safe-area-inset-bottom)+5.15rem)] right-3 z-[2000] h-11 w-11 shadow-lg sm:bottom-[5.15rem] sm:right-3.5"
+            className="ui-button-icon ui-floating-surface ui-enter ui-enter-delay-2 absolute bottom-[calc(env(safe-area-inset-bottom)+5.15rem)] right-3 z-[2000] h-11 w-11 shadow-lg sm:bottom-[5.15rem] sm:right-3.5"
             title="Locate me"
             aria-label="Locate me"
           >
@@ -152,24 +173,40 @@ export default function Home() {
           </button>
 
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2000]">
-            <div className="pointer-events-auto absolute bottom-[calc(env(safe-area-inset-bottom)+0.6rem)] left-1/2 flex max-w-[96vw] -translate-x-1/2 items-center justify-start sm:justify-center gap-1.5 overflow-x-auto no-scrollbar rounded-full p-1.5 ui-dock">
-              {filterOptions.map((filter) => {
-                const Icon = filter.icon;
-                const isActive = activeFilter === filter.value;
+            <div className="pointer-events-auto absolute bottom-[calc(env(safe-area-inset-bottom)+0.6rem)] left-1/2 max-w-[96vw] -translate-x-1/2">
+              <div ref={filterBarRef} className="ui-dock ui-floating-surface ui-enter ui-enter-delay-3 relative flex items-center justify-start sm:justify-center gap-1.5 overflow-x-auto no-scrollbar rounded-full p-1.5">
+                {filterHighlight && (
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute top-1.5 bottom-1.5 left-0 rounded-full bg-[var(--ui-brand)] transition-[transform,width] duration-250 ease-out"
+                    style={{
+                      width: `${filterHighlight.width}px`,
+                      transform: `translateX(${filterHighlight.left}px)`,
+                      boxShadow: '0 8px 18px rgba(217, 72, 50, 0.2)',
+                    }}
+                  />
+                )}
+                {filterOptions.map((filter) => {
+                  const Icon = filter.icon;
+                  const isActive = activeFilter === filter.value;
 
-                return (
-                  <button
-                    key={filter.value}
-                    type="button"
-                    onClick={() => setActiveFilter(filter.value)}
-                    aria-pressed={isActive}
-                    className={`ui-control-button shrink-0 flex items-center justify-center px-3 py-2 text-[11px] sm:text-sm whitespace-nowrap transition-all ${isActive ? '!bg-red-600 !border-red-600 !text-white scale-[1.02] shadow-md' : ''}`}
-                  >
-                    <Icon size={14} className="hidden sm:block shrink-0" />
-                    <span>{filter.label}</span>
-                  </button>
-                );
-              })}
+                  return (
+                    <button
+                      ref={(node) => {
+                        filterButtonRefs.current[filter.value] = node;
+                      }}
+                      key={filter.value}
+                      type="button"
+                      onClick={() => setActiveFilter(filter.value)}
+                      aria-pressed={isActive}
+                      className={`ui-control-button ui-pressable relative z-10 shrink-0 flex items-center justify-center px-3 py-2 text-[11px] sm:text-sm whitespace-nowrap ${isActive ? '!bg-transparent !text-white hover:!bg-transparent hover:!text-white' : ''}`}
+                    >
+                      <Icon size={14} className="hidden sm:block shrink-0" />
+                      <span>{filter.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </section>

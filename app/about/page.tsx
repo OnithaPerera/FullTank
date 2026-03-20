@@ -76,7 +76,7 @@ export default function AboutPage() {
   return (
     <main className={`${isDark ? 'theme-dark' : 'theme-light'} ui-page min-h-[100dvh]`}>
       <div className="mx-auto max-w-5xl px-4 pb-14 pt-[calc(env(safe-area-inset-top)+1rem)] sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between gap-3">
+        <div className="ui-enter flex items-center justify-between gap-3">
           <Link href="/" className="ui-button-neutral">
             <ArrowLeft size={16} />
             Back to Map
@@ -92,7 +92,7 @@ export default function AboutPage() {
           </button>
         </div>
 
-        <section className="ui-panel mt-4 rounded-[32px] px-5 py-6 sm:px-7 sm:py-7">
+        <section className="ui-panel ui-enter ui-enter-delay-1 mt-4 rounded-[32px] px-5 py-6 sm:px-7 sm:py-7">
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(17rem,1fr)]">
             <div>
               <div className="flex items-center gap-3">
@@ -146,7 +146,7 @@ export default function AboutPage() {
           </div>
         </section>
 
-        <section className="mt-6 grid gap-4 lg:grid-cols-3">
+        <section className="ui-enter ui-enter-delay-2 mt-6 grid gap-4 lg:grid-cols-3">
           <div className="ui-panel rounded-[28px] px-5 py-5">
             <div className="flex items-center gap-2">
               <MapPin className="text-[var(--ui-brand)]" size={18} />
@@ -218,7 +218,7 @@ export default function AboutPage() {
           </div>
         </section>
 
-        <section className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(17rem,0.7fr)]">
+        <section className="ui-enter ui-enter-delay-3 mt-6 grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(17rem,0.7fr)]">
           <div className="ui-panel rounded-[32px] px-5 py-6 sm:px-6">
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -321,7 +321,7 @@ export default function AboutPage() {
           </div>
         </section>
 
-        <footer className="ui-text-muted mt-8 border-t border-[var(--ui-border)] pt-5 text-center text-xs">
+        <footer className="ui-enter ui-enter-delay-3 ui-text-muted mt-8 border-t border-[var(--ui-border)] pt-5 text-center text-xs">
           <p>&copy; {new Date().getFullYear()} FullTank.</p>
           <p className="mt-1">Created and maintained by <strong>FullTank Dev Team</strong>.</p>
         </footer>
