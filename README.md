@@ -31,7 +31,7 @@ Make sure you have Node.js and npm installed on your machine.
 
 1. Clone the repository:
    ```bash
-   git clone [https://github.com/YOUR_USERNAME/fulltank.git](https://github.com/YOUR_USERNAME/fulltank.git)
+   git clone [https://github.com/OnithaPerera/fulltank.git](https://github.com/OnithaPerera/fulltank.git)
    cd fulltank
    
 2. Install the dependencies:
@@ -61,3 +61,6 @@ Contributions are what make the open-source community such an amazing place to l
    3. Commit your Changes (git commit -m 'Add some AmazingFeature')
    4. Push to the Branch (git push origin feature/AmazingFeature)
    5. Open a Pull Request
+
+### License
+Distributed under the MIT License. See LICENSE for more information.
