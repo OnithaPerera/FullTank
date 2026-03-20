@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import MapLegend from '../components/MapLegend';
 import WelcomeModal from '../components/WelcomeModal';
 import NearestSheds from '../components/NearestSheds';
+import { supabase } from './lib/supabase';
 
 const MapBox = dynamic(() => import('../components/MapBox'), { ssr: false });
 
@@ -65,9 +66,24 @@ export default function Home() {
     const stationId = new URLSearchParams(window.location.search).get('station')?.trim();
     if (!stationId) return;
 
-    setActiveFilter('all');
-    setTargetLoc(null);
-    setTargetStationId(stationId);
+    // Ask Supabase for the exact GPS coordinates of this shared link
+    const fetchStationLocation = async () => {
+      const { data, error } = await supabase
+        .from('stations')
+        .select('lat, lng')
+        .eq('id', stationId)
+        .single();
+
+      if (data && !error) {
+        setActiveFilter('all');
+        setTargetStationId(stationId);
+        // Feed the actual coordinates to the map so it knows where to pan
+        setTargetLoc({ lat: data.lat, lng: data.lng }); 
+        setTargetTrigger((prev) => prev + 1);
+      }
+    };
+
+    fetchStationLocation();
   }, []);
 
   const toggleTheme = () => {
@@ -166,7 +182,7 @@ export default function Home() {
           </button>
 
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2000]">
-            <div className="pointer-events-auto absolute bottom-[calc(env(safe-area-inset-bottom)+0.6rem)] left-1/2 flex max-w-[96vw] -translate-x-1/2 items-center justify-start sm:justify-center gap-1.5 overflow-x-auto no-scrollbar rounded-full p-1.5 ui-dock">
+            <div className="pointer-events-auto absolute bottom-[calc(env(safe-area-inset-bottom)+0.6rem)] left-1/2 flex max-w-[96vw] -translate-x-1/2 items-center justify-start sm:justify-center gap-0 overflow-x-auto no-scrollbar rounded-full p-1.5 ui-dock">
               {filterOptions.map((filter) => {
                 const Icon = filter.icon;
                 const isActive = activeFilter === filter.value;
