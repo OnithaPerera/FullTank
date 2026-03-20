@@ -69,21 +69,26 @@ a {
 
 .theme-dark {
   color-scheme: dark;
-  --background: #07111a;
-  --foreground: #f5f7fb;
-  --ui-text: #f5f7fb;
-  --ui-text-muted: #99a7bb;
-  --ui-surface: rgba(10, 18, 29, 0.9);
-  --ui-surface-strong: #0d1826;
-  --ui-surface-muted: #111f31;
-  --ui-border: rgba(148, 163, 184, 0.16);
-  --ui-border-strong: rgba(148, 163, 184, 0.24);
+  --background: #0f172a; 
+  --foreground: #f8fafc;
+  --ui-text: #f8fafc;
+  --ui-text-muted: #94a3b8;
+  --ui-surface: rgba(30, 41, 59, 0.95); /* Lighter floating surface */
+  --ui-surface-strong: #1e293b; /* Lighter solid surface */
+  --ui-surface-muted: #334155;
+  --ui-border: rgba(148, 163, 184, 0.2);
+  --ui-border-strong: rgba(148, 163, 184, 0.3);
   --ui-brand: #f05f47;
   --ui-brand-strong: #ff7c66;
   --ui-brand-soft: rgba(240, 95, 71, 0.14);
   --ui-shell-glow: rgba(240, 95, 71, 0.12);
   --ui-shadow-soft: 0 10px 24px rgba(0, 0, 0, 0.22);
   --ui-shadow: 0 18px 38px rgba(0, 0, 0, 0.32);
+}
+
+/* Brighten the dark map tiles */
+.theme-dark .leaflet-layer {
+  filter: brightness(1.25) contrast(0.95); 
 }
 
 .ui-page {
