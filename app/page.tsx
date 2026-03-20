@@ -44,6 +44,7 @@ export default function Home() {
   const [showNearest, setShowNearest] = useState(false);
   const [targetLoc, setTargetLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [targetTrigger, setTargetTrigger] = useState(0);
+  const [targetStationId, setTargetStationId] = useState<string | null>(null);
 
   const [showWelcome, setShowWelcome] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -58,6 +59,17 @@ export default function Home() {
     }
   }, [isDark]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const stationId = new URLSearchParams(window.location.search).get('station')?.trim();
+    if (!stationId) return;
+
+    setActiveFilter('all');
+    setTargetLoc(null);
+    setTargetStationId(stationId);
+  }, []);
+
   const toggleTheme = () => {
     const nextTheme = !isDark;
     setIsDark(nextTheme);
@@ -71,6 +83,7 @@ export default function Home() {
 
   const handleShowStation = (lat: number, lng: number, fuelKey: string) => {
     setTargetLoc({ lat, lng });
+    setTargetStationId(null);
     setTargetTrigger(prev => prev + 1);
     setActiveFilter(fuelKeyToFilter[fuelKey]);
   };
@@ -131,6 +144,7 @@ export default function Home() {
             isDark={isDark}
             recenterTrigger={recenterTrigger}
             targetLoc={targetLoc}
+            targetStationId={targetStationId}
             targetTrigger={targetTrigger}
             onUserLocChange={setUserLoc}
           />
