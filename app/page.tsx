@@ -8,6 +8,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import MapLegend from '../components/MapLegend';
 import WelcomeModal from '../components/WelcomeModal';
 import NearestSheds from '../components/NearestSheds';
+import { supabase } from './lib/supabase';
 
 const MapBox = dynamic(() => import('../components/MapBox'), { ssr: false });
 
@@ -33,13 +34,10 @@ const fuelKeyToFilter: Record<string, FuelFilter> = {
 
 export default function Home() {
   const [activeFilter, setActiveFilter] = useState<FuelFilter>('all');
-  const [filterHighlight, setFilterHighlight] = useState<{ left: number; width: number } | null>(null);
   const [isDark, setIsDark] = useState(() => {
     if (typeof window === 'undefined') return false;
     return localStorage.getItem(THEME_STORAGE_KEY) === 'dark';
   });
-  const filterBarRef = useRef<HTMLDivElement | null>(null);
-  const filterButtonRefs = useRef<Partial<Record<FuelFilter, HTMLButtonElement | null>>>({});
 
   const [recenterTrigger, setRecenterTrigger] = useState(0);
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
@@ -47,11 +45,26 @@ export default function Home() {
   const [showNearest, setShowNearest] = useState(false);
   const [targetLoc, setTargetLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [targetTrigger, setTargetTrigger] = useState(0);
+  const [targetStationId, setTargetStationId] = useState<string | null>(null);
 
   const [showWelcome, setShowWelcome] = useState(() => {
     if (typeof window === 'undefined') return false;
     return !localStorage.getItem(WELCOME_STORAGE_KEY);
   });
+
+  const filterButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, opacity: 0 });
+
+  useLayoutEffect(() => {
+    const activeBtn = filterButtonRefs.current[activeFilter];
+    if (activeBtn) {
+      setPillStyle({
+        left: activeBtn.offsetLeft,
+        width: activeBtn.offsetWidth,
+        opacity: 1,
+      });
+    }
+  }, [activeFilter]);
 
   useEffect(() => {
     document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
@@ -60,6 +73,30 @@ export default function Home() {
       themeMeta.setAttribute('content', isDark ? '#07111a' : '#f4efe8');
     }
   }, [isDark]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const stationId = new URLSearchParams(window.location.search).get('station')?.trim();
+    if (!stationId) return;
+
+    const fetchStationLocation = async () => {
+      const { data, error } = await supabase
+        .from('stations')
+        .select('lat, lng')
+        .eq('id', stationId)
+        .single();
+
+      if (data && !error) {
+        setActiveFilter('all');
+        setTargetStationId(stationId);
+        setTargetLoc({ lat: data.lat, lng: data.lng });
+        setTargetTrigger((prev) => prev + 1);
+      }
+    };
+
+    fetchStationLocation();
+  }, []);
 
   const toggleTheme = () => {
     const nextTheme = !isDark;
@@ -74,32 +111,15 @@ export default function Home() {
 
   const handleShowStation = (lat: number, lng: number, fuelKey: string) => {
     setTargetLoc({ lat, lng });
+    setTargetStationId(null);
     setTargetTrigger(prev => prev + 1);
     setActiveFilter(fuelKeyToFilter[fuelKey]);
   };
 
-  useLayoutEffect(() => {
-    const updateFilterHighlight = () => {
-      const activeButton = filterButtonRefs.current[activeFilter];
-      const filterBar = filterBarRef.current;
-
-      if (!activeButton || !filterBar) return;
-
-      setFilterHighlight({
-        left: activeButton.offsetLeft,
-        width: activeButton.offsetWidth,
-      });
-    };
-
-    updateFilterHighlight();
-    window.addEventListener('resize', updateFilterHighlight);
-    return () => window.removeEventListener('resize', updateFilterHighlight);
-  }, [activeFilter]);
-
   return (
     <main className={`${isDark ? 'theme-dark' : 'theme-light'} ui-page`}>
       <div className="flex h-[100dvh] w-full flex-col overflow-hidden">
-        <header className="ui-panel ui-enter flex-none rounded-none border-x-0 border-t-0 px-3.5 py-3 sm:px-4.5 sm:py-3.5">
+        <header className="ui-panel flex-none rounded-none border-x-0 border-t-0 px-3.5 py-3 sm:px-4.5 sm:py-3.5">
           <div className="flex items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
               <div className="ui-brand-mark flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] sm:h-12 sm:w-12 sm:rounded-[16px]">
@@ -122,7 +142,6 @@ export default function Home() {
                 title="Nearby sheds"
               >
                 <Navigation size={18} className="sm:w-4 sm:h-4 shrink-0" />
-                {/* FIX: Removed 'hidden sm:inline' so Nearby shows on mobile */}
                 <span className="font-semibold text-[13px] sm:text-sm">Nearby</span>
               </button>
               <Link href="/about" className="ui-button-neutral !px-2.5 sm:!px-3.5" title="About and reports">
@@ -152,6 +171,7 @@ export default function Home() {
             isDark={isDark}
             recenterTrigger={recenterTrigger}
             targetLoc={targetLoc}
+            targetStationId={targetStationId}
             targetTrigger={targetTrigger}
             onUserLocChange={setUserLoc}
           />
@@ -165,7 +185,7 @@ export default function Home() {
           <button
             type="button"
             onClick={() => setRecenterTrigger((value) => value + 1)}
-            className="ui-button-icon ui-floating-surface ui-enter ui-enter-delay-2 absolute bottom-[calc(env(safe-area-inset-bottom)+5.15rem)] right-3 z-[2000] h-11 w-11 shadow-lg sm:bottom-[5.15rem] sm:right-3.5"
+            className="ui-button-icon absolute bottom-[calc(env(safe-area-inset-bottom)+5.15rem)] right-3 z-[2000] h-11 w-11 shadow-lg sm:bottom-[5.15rem] sm:right-3.5"
             title="Locate me"
             aria-label="Locate me"
           >
@@ -173,19 +193,16 @@ export default function Home() {
           </button>
 
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2000]">
-            <div className="pointer-events-auto absolute bottom-[calc(env(safe-area-inset-bottom)+0.6rem)] left-1/2 max-w-[96vw] -translate-x-1/2">
-              <div ref={filterBarRef} className="ui-dock ui-floating-surface ui-enter ui-enter-delay-3 relative flex items-center justify-start sm:justify-center gap-1.5 overflow-x-auto no-scrollbar rounded-full p-1.5">
-                {filterHighlight && (
-                  <div
-                    aria-hidden="true"
-                    className="pointer-events-none absolute top-1.5 bottom-1.5 left-0 rounded-full bg-[var(--ui-brand)] transition-[transform,width] duration-250 ease-out"
-                    style={{
-                      width: `${filterHighlight.width}px`,
-                      transform: `translateX(${filterHighlight.left}px)`,
-                      boxShadow: '0 8px 18px rgba(217, 72, 50, 0.2)',
-                    }}
-                  />
-                )}
+            <div className="pointer-events-auto absolute bottom-[calc(env(safe-area-inset-bottom)+0.6rem)] left-1/2 flex max-w-[96vw] -translate-x-1/2 items-center justify-start sm:justify-center gap-0.5 overflow-x-auto no-scrollbar rounded-full p-1.5 ui-dock">
+              <div className="relative flex w-full items-center gap-0.5">
+                <div
+                  className="absolute inset-y-0 left-0 z-0 rounded-full bg-[var(--ui-brand)] transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)]"
+                  style={{
+                    transform: `translateX(${pillStyle.left}px)`,
+                    width: `${pillStyle.width}px`,
+                    opacity: pillStyle.opacity,
+                  }}
+                />
                 {filterOptions.map((filter) => {
                   const Icon = filter.icon;
                   const isActive = activeFilter === filter.value;

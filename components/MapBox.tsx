@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEffect, useRef, useState, type Dispatch, type MouseEvent, type SetStateAction } from 'react';
 import { supabase } from '../app/lib/supabase';
-import { Map, MapPin, Clock, Edit3, ShieldCheck, Fuel, Droplets, X, type LucideIcon } from 'lucide-react';
+import { Map, MapPin, Clock, Edit3, ShieldCheck, Fuel, Droplets, Share2, Check, X, type LucideIcon } from 'lucide-react';
 
 // --- ICONS ---
 const greenIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png', iconSize: [25, 41], iconAnchor: [12, 41] });
@@ -89,6 +89,12 @@ function TargetCenterer({ targetLoc, targetTrigger }: { targetLoc: { lat: number
   return null;
 }
 
+function mergeStation(existingStations: Station[], nextStation: Station) {
+  const exists = existingStations.some((station) => station.id === nextStation.id);
+  if (!exists) return [...existingStations, nextStation];
+  return existingStations.map((station) => (station.id === nextStation.id ? nextStation : station));
+}
+
 function StableBoundsTracker({ setStations, pauseBoundsUpdates, onMapClick }: { setStations: Dispatch<SetStateAction<Station[]>>; pauseBoundsUpdates: boolean; onMapClick: () => void; }) {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const cachedBoundsRef = useRef<L.LatLngBounds | null>(null);
@@ -130,7 +136,7 @@ function StableBoundsTracker({ setStations, pauseBoundsUpdates, onMapClick }: { 
 }
 
 // --- MAIN EXPORT ---
-export default function MapBox({ activeFilter, isDark, recenterTrigger, targetLoc, targetTrigger, onUserLocChange }: { activeFilter: string; isDark: boolean; recenterTrigger: number; targetLoc: { lat: number; lng: number } | null; targetTrigger: number; onUserLocChange?: (loc: { lat: number, lng: number }) => void }) {
+export default function MapBox({ activeFilter, isDark, recenterTrigger, targetLoc, targetStationId, targetTrigger, onUserLocChange }: { activeFilter: string; isDark: boolean; recenterTrigger: number; targetLoc: { lat: number; lng: number } | null; targetStationId: string | null; targetTrigger: number; onUserLocChange?: (loc: { lat: number, lng: number }) => void }) {
   const [stations, setStations] = useState<Station[]>([]);
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [interactedStations, setInteractedStations] = useState<string[]>(() => {
@@ -142,8 +148,13 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger, targetLo
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
+  const [linkedTargetLoc, setLinkedTargetLoc] = useState<{ lat: number; lng: number } | null>(null);
+  const [linkedTargetTrigger, setLinkedTargetTrigger] = useState(0);
+  const [copiedStationId, setCopiedStationId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditFormState>({ has_92: false, has_95: false, has_diesel: false, has_super_diesel: false, queue_length: 'Unknown' });
   const markerRefs = useRef<Record<string, L.Marker | null>>({});
+  const copiedTimerRef = useRef<number | null>(null);
+  const handledLinkedStationIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -155,11 +166,48 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger, targetLo
     }
   }, [onUserLocChange]);
 
+  useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current !== null) {
+        window.clearTimeout(copiedTimerRef.current);
+      }
+    };
+  }, []);
+
   const recordInteraction = (id: string) => {
     if (interactedStations.includes(id)) return;
     const nextActions = [...interactedStations, id];
     setInteractedStations(nextActions);
     localStorage.setItem('fulltank_actions', JSON.stringify(nextActions));
+  };
+
+  const copyStationLink = async (event: MouseEvent<HTMLButtonElement>, stationId: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (typeof window === 'undefined') return;
+
+    const shareUrl = new URL(window.location.href);
+    shareUrl.searchParams.set('station', stationId);
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl.toString());
+      } else {
+        window.prompt('Copy this station link', shareUrl.toString());
+      }
+
+      setCopiedStationId(stationId);
+      if (copiedTimerRef.current !== null) {
+        window.clearTimeout(copiedTimerRef.current);
+      }
+
+      copiedTimerRef.current = window.setTimeout(() => {
+        setCopiedStationId((current) => (current === stationId ? null : current));
+      }, 1800);
+    } catch {
+      window.prompt('Copy this station link', shareUrl.toString());
+    }
   };
 
   const openUpdateForm = (event: MouseEvent<HTMLButtonElement>, station: Station) => {
@@ -206,11 +254,62 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger, targetLo
     return () => window.cancelAnimationFrame(frameId);
   }, [selectedStationId, stations]);
 
+  useEffect(() => {
+    const stationId = targetStationId?.trim();
+    if (!stationId || stationId === handledLinkedStationIdRef.current) return;
+
+    handledLinkedStationIdRef.current = stationId;
+
+    const focusStation = (station: Station) => {
+      setLinkedTargetLoc({ lat: station.lat, lng: station.lng });
+      setLinkedTargetTrigger((current) => current + 1);
+      setSelectedStationId(station.id);
+    };
+
+    const existingStation = stations.find((station) => station.id === stationId);
+    if (existingStation) {
+      focusStation(existingStation);
+      return;
+    }
+
+    let isCancelled = false;
+
+    const loadStation = async () => {
+      const { data, error } = await supabase.from('stations').select('*').eq('id', stationId).maybeSingle();
+
+      if (isCancelled || error || !data) return;
+
+      const nextStation: Station = {
+        id: String(data.id),
+        name: String(data.name ?? 'Unnamed station'),
+        lat: Number(data.lat),
+        lng: Number(data.lng),
+        has_92: Boolean(data.has_92),
+        has_95: Boolean(data.has_95),
+        has_diesel: Boolean(data.has_diesel),
+        has_super_diesel: Boolean(data.has_super_diesel),
+        queue_length: typeof data.queue_length === 'string' ? data.queue_length : null,
+        confirms: typeof data.confirms === 'number' ? data.confirms : Number(data.confirms ?? 0),
+        last_updated: typeof data.last_updated === 'string' ? data.last_updated : null,
+      };
+
+      setStations((current) => mergeStation(current, nextStation));
+      focusStation(nextStation);
+    };
+
+    void loadStation();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [stations, targetStationId]);
+
   return (
     <MapContainer center={[6.8511, 79.8681]} zoom={14} style={{ height: '100%', width: '100%' }}>
       <TileLayer key={isDark ? 'dark' : 'light'} url={isDark ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'} />
       <LocationCenterer userLoc={userLoc} recenterTrigger={recenterTrigger} />
       <TargetCenterer targetLoc={targetLoc} targetTrigger={targetTrigger} />
+      <TargetCenterer targetLoc={linkedTargetLoc} targetTrigger={linkedTargetTrigger} />
       <StableBoundsTracker setStations={setStations} pauseBoundsUpdates={selectedStationId !== null} onMapClick={() => setSelectedStationId(null)} />
 
       {userLoc && (
@@ -443,7 +542,11 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger, targetLo
                             <Map size={14} className="text-white"/> 
                             <span className="text-white">Directions</span>
                         </a>
-                        <button onClick={(e) => openUpdateForm(e, station)} className={`ui-pressable flex-1 basis-0 flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 py-2.5 rounded-xl text-xs font-bold ${isDark ? 'text-slate-800' : 'text-slate-700'}`}>
+                        <button onClick={(e) => copyStationLink(e, station.id)} className={`ui-pressable flex-[0.55] flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition-colors active:scale-[0.98] ${copiedStationId === station.id ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/50' : 'bg-[var(--ui-surface-muted)] hover:bg-[var(--ui-surface-strong)] text-[var(--ui-text)] border border-[var(--ui-border)]'}`}>
+                            {copiedStationId === station.id ? <Check size={14}/> : <Share2 size={14}/>}
+                            <span>{copiedStationId === station.id ? 'Copied' : 'Share'}</span>
+                        </button>
+                        <button onClick={(e) => openUpdateForm(e, station)} className="ui-pressable flex-[0.5] flex items-center justify-center gap-1.5 bg-[var(--ui-surface-muted)] hover:bg-[var(--ui-surface-strong)] text-[var(--ui-text)] border border-[var(--ui-border)] py-2.5 rounded-xl text-xs font-bold transition-colors active:scale-[0.98]">
                             <Edit3 size={14}/> Update
                         </button>
                       </div>
