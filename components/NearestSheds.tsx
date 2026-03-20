@@ -65,6 +65,20 @@ export default function NearestSheds({ userLoc, trigger, isDark, onClose, onShow
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<RankedStation[]>([]);
   const [message, setMessage] = useState<string | null>("Select the fuel type you need above.");
+  const [isMounted, setIsMounted] = useState(trigger);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (trigger) {
+      setIsMounted(true);
+      const frame = window.requestAnimationFrame(() => setIsVisible(true));
+      return () => window.cancelAnimationFrame(frame);
+    }
+
+    setIsVisible(false);
+    const timeout = window.setTimeout(() => setIsMounted(false), 180);
+    return () => window.clearTimeout(timeout);
+  }, [trigger]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -136,20 +150,21 @@ export default function NearestSheds({ userLoc, trigger, isDark, onClose, onShow
     };
   }, [trigger, userLoc, selectedFuel]);
 
-  if (!trigger) return null;
+  if (!isMounted) return null;
 
   return (
     <>
-      <button type="button" onClick={onClose} className="fixed inset-0 z-[3990] bg-slate-950/30 backdrop-blur-[2px]" />
+      <button type="button" onClick={onClose} data-state={isVisible ? 'open' : 'closed'} className="ui-backdrop fixed inset-0 z-[3990] bg-slate-950/30 sm:backdrop-blur-[1px]" />
 
-      <div className={`fixed left-1/2 bottom-8 sm:bottom-24 z-[4000] w-[min(94vw,28rem)] translate-x-[-50%] rounded-2xl border p-4 sm:p-5 shadow-2xl transition-colors duration-300 ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
+      <div className="fixed left-1/2 bottom-8 sm:bottom-24 z-[4000] w-[min(94vw,28rem)] translate-x-[-50%]">
+        <div data-state={isVisible ? 'open' : 'closed'} className={`ui-presence rounded-2xl border p-4 sm:p-5 shadow-2xl ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
         
         <div className="mb-4 flex items-start justify-between">
           <div>
             <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Find Nearby Sheds</h2>
-            <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Select what you are looking for:</p>
+            <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Select what you are looking for:</p>
           </div>
-          <button onClick={onClose} className={`rounded-full px-3 py-1 text-xs font-bold transition-colors ${isDark ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+          <button onClick={onClose} className={`ui-pressable rounded-full px-3 py-1 text-xs font-bold ${isDark ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>
             Close
           </button>
         </div>
@@ -161,12 +176,12 @@ export default function NearestSheds({ userLoc, trigger, isDark, onClose, onShow
               <button
                 key={fuel.id}
                 onClick={() => setSelectedFuel(fuel.id)}
-                className={`flex-1 py-2 px-1 rounded-xl text-[10px] sm:text-xs font-bold transition-all text-center whitespace-nowrap shadow-sm ${
+                className={`ui-pressable flex-1 py-2 px-1 rounded-xl text-[10px] sm:text-xs font-bold text-center whitespace-nowrap shadow-sm ${
                   isSelected 
                     ? 'bg-red-600 text-white' 
                     : isDark 
                       ? 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700' 
-                      : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
                 }`}
               >
                 {fuel.label}
@@ -177,13 +192,13 @@ export default function NearestSheds({ userLoc, trigger, isDark, onClose, onShow
 
         <div className="min-h-[150px]">
           {isLoading && (
-             <div className={`flex items-center justify-center h-full rounded-xl py-8 ${isDark ? 'bg-slate-800/50 text-slate-400' : 'bg-slate-50 text-slate-500'}`}>
-               <span className="text-sm font-semibold animate-pulse">Searching map...</span>
+             <div className={`flex items-center justify-center h-full rounded-xl py-8 ${isDark ? 'bg-slate-800/50 text-slate-400' : 'bg-slate-50 text-slate-600'}`}>
+               <span className="text-sm font-semibold">Searching map...</span>
              </div>
           )}
 
           {!isLoading && message && (
-            <div className={`flex items-center justify-center h-full rounded-xl py-8 text-center px-4 ${isDark ? 'bg-slate-800/50 text-slate-400' : 'bg-slate-50 text-slate-500'}`}>
+            <div className={`flex items-center justify-center h-full rounded-xl py-8 text-center px-4 ${isDark ? 'bg-slate-800/50 text-slate-400' : 'bg-slate-50 text-slate-600'}`}>
                <span className="text-sm font-semibold">{message}</span>
             </div>
           )}
@@ -191,7 +206,7 @@ export default function NearestSheds({ userLoc, trigger, isDark, onClose, onShow
           {!isLoading && !message && (
             <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1">
               {results.map((station, index) => (
-                <div key={station.id} className={`rounded-xl border p-4 transition-colors ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                <div key={station.id} className={`ui-card-hover rounded-xl border p-4 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
                   
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div>
@@ -204,8 +219,8 @@ export default function NearestSheds({ userLoc, trigger, isDark, onClose, onShow
                   </div>
 
                   <div className={`flex items-center gap-4 text-xs font-medium mb-4 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                    <p><span className={isDark ? 'text-slate-500' : 'text-slate-400'}>Queue:</span> {station.queue_length || 'Unknown'}</p>
-                    <p><span className={isDark ? 'text-slate-500' : 'text-slate-400'}>Confirms:</span> {station.confirms ?? 0}</p>
+                    <p><span className={isDark ? 'text-slate-500' : 'text-slate-500'}>Queue:</span> {station.queue_length || 'Unknown'}</p>
+                    <p><span className={isDark ? 'text-slate-500' : 'text-slate-500'}>Confirms:</span> {station.confirms ?? 0}</p>
                   </div>
 
                   <button
@@ -216,7 +231,7 @@ export default function NearestSheds({ userLoc, trigger, isDark, onClose, onShow
                       }
                       onClose();
                     }}
-                    className={`w-full py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm ${isDark ? 'bg-blue-600 text-white hover:bg-blue-500' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                    className={`ui-pressable w-full py-2.5 rounded-lg text-sm font-bold shadow-sm ${isDark ? 'bg-blue-600 text-white hover:bg-blue-500' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
                   >
                     Show on Map
                   </button>
@@ -227,6 +242,7 @@ export default function NearestSheds({ userLoc, trigger, isDark, onClose, onShow
           )}
         </div>
 
+        </div>
       </div>
     </>
   );

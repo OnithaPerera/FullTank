@@ -216,9 +216,9 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger, targetLo
       {userLoc && (
         <Marker position={[userLoc.lat, userLoc.lng]} icon={blueIcon}>
           <Popup className="custom-popup" closeButton={false}>
-            <div className="p-3 w-48 font-sans">
-              <p className="text-[10px] uppercase font-bold text-[var(--ui-brand)] tracking-wider">Your Location</p>
-              <h3 className="mt-1 text-sm font-bold text-[var(--ui-text)]">You are here</h3>
+            <div className="p-3 bg-white rounded-xl shadow-lg w-48 font-sans">
+              <p className="text-[10px] uppercase font-bold text-blue-500 tracking-wider">Your Location</p>
+              <h3 className="mt-1 text-sm font-bold text-slate-900">You are here</h3>
             </div>
           </Popup>
         </Marker>
@@ -258,6 +258,7 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger, targetLo
           <Marker key={station.id} position={[station.lat, station.lng]} icon={currentIcon} ref={(marker) => { markerRefs.current[station.id] = marker; }} eventHandlers={{ click: () => setSelectedStationId(station.id), popupopen: () => setSelectedStationId(station.id), popupclose: () => { setSelectedStationId((current) => (current === station.id ? null : current)); setEditingId((current) => (current === station.id ? null : current)); } }}>
             <Popup className="custom-popup" closeButton={false}>
               
+              {/* FIX: Removed the outer styling that duplicated the Leaflet styles */}
               <div className="p-4 w-full font-sans">
                 
                 {isEditing ? (
@@ -265,24 +266,54 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger, targetLo
                   <div>
                     <div className="flex justify-between items-center mb-5">
                       <div>
-                        <h3 className="font-bold text-[var(--ui-text)] text-base">Update Station</h3>
-                        <p className="text-xs text-[var(--ui-text-muted)] font-medium truncate max-w-[200px]" title={station.name}>{station.name}</p>
+                        <h3 className={`font-bold text-base ${isDark ? 'text-white' : 'text-slate-900'}`}>Update Station</h3>
+                        <p className={`text-xs font-medium truncate max-w-[200px] ${isDark ? 'text-slate-300' : 'text-slate-600'}`} title={station.name}>{station.name}</p>
                       </div>
-                      <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingId(null); setSelectedStationId(null); markerRefs.current[station.id]?.closePopup(); }} className="p-1.5 text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] hover:bg-[var(--ui-surface-muted)] rounded-full transition-colors">
+                      {/* FIX: Tell Leaflet to close the popup */}
+                      <button
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingId(null); setSelectedStationId(null); markerRefs.current[station.id]?.closePopup(); }}
+                        className={`ui-pressable p-1.5 rounded-full ${isDark ? 'text-slate-300 hover:text-slate-100 hover:bg-slate-800' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'}`}
+                      >
                         <X size={18} />
                       </button>
                     </div>
 
                     <div className="mb-4">
-                      <div className="text-[10px] uppercase font-bold text-[var(--ui-text-muted)] mb-2">Fuel Status</div>
+                      <div className="text-[10px] uppercase font-bold text-slate-600 mb-2">Fuel Status</div>
                       <div className="grid grid-cols-2 gap-2">
                         {fuelTypes.map((fuel) => {
                           const Icon = fuel.icon;
                           const isSelected = Boolean(editForm[fuel.key]);
                           return (
-                            <button key={fuel.key} onClick={(e) => toggleFuelInEditForm(e, fuel.key)} className={`flex flex-col items-start gap-1 p-2.5 rounded-xl border text-left transition-all ${isSelected ? 'bg-emerald-50 border-emerald-500 text-emerald-900 shadow-sm dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-[var(--ui-surface-strong)] border-[var(--ui-border)] text-[var(--ui-text-muted)] hover:border-[var(--ui-border-strong)]'}`}>
-                              <div className="flex items-center gap-1.5"><Icon size={14} className={isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-[var(--ui-text-muted)]'}/> <span className="text-xs font-bold">{fuel.label}</span></div>
-                              <span className="text-[10px] font-semibold">{isSelected ? 'Available' : 'Empty'}</span>
+                            <button
+                              key={fuel.key}
+                              onClick={(e) => toggleFuelInEditForm(e, fuel.key)}
+                              className={`ui-pressable flex flex-col items-start gap-1 p-2.5 rounded-xl border text-left ${
+                                isDark
+                                  ? isSelected
+                                    ? 'bg-emerald-500/12 border-emerald-400/35 text-emerald-100 shadow-sm'
+                                    : 'bg-slate-800 border-slate-700 text-slate-200 hover:border-slate-500'
+                                  : isSelected
+                                    ? 'bg-emerald-50 border-emerald-500 text-emerald-900 shadow-sm'
+                                    : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
+                              }`}
+                            >
+                              <div className="flex items-center gap-1.5">
+                                <Icon
+                                  size={14}
+                                  className={
+                                    isDark
+                                      ? isSelected
+                                        ? 'text-emerald-300'
+                                        : 'text-slate-500'
+                                      : isSelected
+                                        ? 'text-emerald-600'
+                                        : 'text-slate-500'
+                                  }
+                                />
+                                <span className="text-xs font-bold">{fuel.label}</span>
+                              </div>
+                              <span className={`text-[10px] font-semibold ${isDark ? '' : isSelected ? 'text-emerald-700' : 'text-slate-700'}`}>{isSelected ? 'Available' : 'Empty'}</span>
                             </button>
                           );
                         })}
@@ -290,13 +321,27 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger, targetLo
                     </div>
 
                     <div className="mb-5">
-                      <div className="text-[10px] uppercase font-bold text-[var(--ui-text-muted)] mb-2">Queue Length</div>
-                      <select value={editForm.queue_length} onChange={(e) => setEditForm(c => ({...c, queue_length: e.target.value}))} onClick={e => e.stopPropagation()} className="w-full bg-[var(--ui-surface-muted)] border border-[var(--ui-border-strong)] text-[var(--ui-text)] text-sm font-semibold rounded-xl px-3 py-2.5 focus:outline-none focus:border-[var(--ui-brand)]">
-                        {queueOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                      <div className="text-[10px] uppercase font-bold text-slate-600 mb-2">Queue Length</div>
+                      <select
+                        value={editForm.queue_length}
+                        onChange={(e) => setEditForm(c => ({ ...c, queue_length: e.target.value }))}
+                        onClick={e => e.stopPropagation()}
+                        style={{ colorScheme: isDark ? 'dark' : 'light' }}
+                        className={`w-full border text-sm font-semibold rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 ${
+                          isDark
+                            ? 'bg-slate-800 text-slate-100 border-slate-700 focus:border-slate-500 focus:ring-slate-600/50'
+                            : 'bg-slate-50 text-slate-900 border-slate-200 focus:border-slate-300 focus:ring-slate-300'
+                        }`}
+                      >
+                        {queueOptions.map(opt => (
+                          <option key={opt} value={opt} className={isDark ? 'bg-slate-900 text-slate-100' : 'bg-white text-slate-900'}>
+                            {opt}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
-                    <button onClick={(e) => submitUpdate(e, station.id)} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-sm transition-colors shadow-md active:scale-[0.98]">
+                    <button onClick={(e) => submitUpdate(e, station.id)} className="ui-pressable w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-sm shadow-md">
                       Save Update
                     </button>
                   </div>
@@ -305,27 +350,31 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger, targetLo
                   <div>
                     {/* Header */}
                     <div className="flex justify-between items-start mb-1.5">
-                      <h3 className="font-bold text-[var(--ui-text)] text-lg leading-tight pr-2">{station.name}</h3>
-                      <button onClick={(e) => { e.stopPropagation(); setSelectedStationId(null); markerRefs.current[station.id]?.closePopup(); }} className="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors">
+                      <h3 className={`font-bold text-lg leading-tight pr-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>{station.name}</h3>
+                      {/* FIX: Tell Leaflet to close the popup */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setSelectedStationId(null); markerRefs.current[station.id]?.closePopup(); }}
+                        className={`ui-pressable ${isDark ? 'text-slate-300 hover:text-slate-100' : 'text-slate-500 hover:text-slate-800'}`}
+                      >
                         <X size={18} />
                       </button>
                     </div>
                     
                     {/* Meta info */}
-                    <div className="flex items-center gap-3 text-[11px] text-[var(--ui-text-muted)] font-semibold mb-4">
+                    <div className={`flex items-center gap-3 text-[11px] font-semibold mb-4 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                       <span className="flex items-center gap-1"><MapPin size={12}/> {distanceStr}</span>
                       <span className="flex items-center gap-1"><Clock size={12}/> {displayTime}</span>
                     </div>
 
                     {/* Trust & Queue Cards */}
                     <div className="grid grid-cols-2 gap-2 mb-5">
-                      <div className="bg-[var(--ui-surface-muted)] rounded-xl p-3 border border-[var(--ui-border)]">
-                        <div className="text-[10px] uppercase font-bold text-[var(--ui-text-muted)] mb-0.5">Queue</div>
-                        <div className="text-sm font-bold text-[var(--ui-text)]">{station.queue_length || 'Unknown'}</div>
+                      <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
+                        <div className="text-[10px] uppercase font-bold text-slate-600 mb-0.5">Queue</div>
+                        <div className="text-sm font-bold text-slate-800">{station.queue_length || 'Unknown'}</div>
                       </div>
-                      <div className={`rounded-xl p-3 border ${stationState === 'verified' ? 'bg-emerald-50 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800/50' : 'bg-[var(--ui-surface-muted)] border-[var(--ui-border)]'}`}>
-                        <div className="text-[10px] uppercase font-bold text-[var(--ui-text-muted)] mb-0.5">Trust</div>
-                        <div className={`text-sm font-bold flex items-center gap-1.5 ${stationState === 'verified' ? 'text-emerald-700 dark:text-emerald-400' : 'text-[var(--ui-text)]'}`}>
+                      <div className={`rounded-xl p-3 border ${stationState === 'verified' ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'}`}>
+                        <div className="text-[10px] uppercase font-bold text-slate-600 mb-0.5">Trust</div>
+                        <div className={`text-sm font-bold flex items-center gap-1.5 ${stationState === 'verified' ? 'text-emerald-700' : 'text-slate-800'}`}>
                           {stationState === 'verified' && <ShieldCheck size={14} />}
                           {confirmationCount >= 3 ? 'Verified' : `${confirmationCount}/3 Confirms`}
                         </div>
@@ -334,15 +383,53 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger, targetLo
 
                     {/* Fuel Status Grid */}
                     <div className="mb-5">
-                      <div className="text-[10px] uppercase font-bold text-[var(--ui-text-muted)] mb-2">Fuel Availability</div>
+                      <div className="text-[10px] uppercase font-bold text-slate-600 mb-2">Fuel Availability</div>
                       <div className="grid grid-cols-2 gap-1.5">
                         {fuelTypes.map((fuel) => {
                           const Icon = fuel.icon;
                           const isPresent = Boolean(station[fuel.key]);
+                          const fuelStatusLabel = isPresent ? 'Available' : 'Unavailable';
                           return (
-                            <div key={fuel.key} className={`flex items-center gap-2 py-2 px-2.5 rounded-[10px] border ${isPresent ? 'bg-[var(--ui-surface-strong)] border-[var(--ui-border-strong)] text-[var(--ui-text)] shadow-sm' : 'bg-[var(--ui-surface-muted)] border-[var(--ui-border)] text-[var(--ui-text-muted)]'}`}>
-                              <Icon size={14} className={isPresent ? "text-[var(--ui-brand)]" : "text-[var(--ui-text-muted)]"} />
-                              <span className="text-xs font-bold">{fuel.label}</span>
+                            <div
+                              key={fuel.key}
+                              className={`flex items-start gap-2 py-2.5 px-2.5 rounded-[10px] border ${
+                                isDark
+                                  ? isPresent
+                                    ? 'bg-emerald-500/12 border-emerald-400/40 text-emerald-100 shadow-sm'
+                                    : 'bg-slate-800/90 border-slate-600/70 text-slate-200'
+                                  : isPresent
+                                    ? 'bg-white border-emerald-300 text-slate-800 shadow-sm'
+                                    : 'bg-slate-50 border-slate-300 text-slate-700'
+                              }`}
+                            >
+                              <Icon
+                                size={14}
+                                className={
+                                  isDark
+                                    ? isPresent
+                                      ? 'text-emerald-300'
+                                      : 'text-slate-400'
+                                    : isPresent
+                                      ? 'text-emerald-500'
+                                      : 'text-slate-500'
+                                }
+                              />
+                              <div className="min-w-0">
+                                <span className="block text-xs font-bold">{fuel.label}</span>
+                                <span
+                                  className={`mt-0.5 block text-[10px] font-medium ${
+                                    isDark
+                                      ? isPresent
+                                        ? 'text-emerald-300'
+                                        : 'text-slate-400'
+                                      : isPresent
+                                        ? 'text-emerald-600'
+                                        : 'text-slate-700'
+                                  }`}
+                                >
+                                  {fuelStatusLabel}
+                                </span>
+                              </div>
                             </div>
                           );
                         })}
@@ -352,17 +439,17 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger, targetLo
                     {/* Actions */}
                     <div className="space-y-2">
                       <div className="flex gap-2">
-                        <a href={gMapsLink} target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 py-2.5 rounded-xl text-xs font-bold transition-colors shadow-sm active:scale-[0.98]">
+                        <a href={gMapsLink} target="_blank" rel="noreferrer" className="ui-pressable flex-1 basis-0 flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 py-2.5 rounded-xl text-xs font-bold shadow-sm">
                             <Map size={14} className="text-white"/> 
                             <span className="text-white">Directions</span>
                         </a>
-                        <button onClick={(e) => openUpdateForm(e, station)} className="flex-[0.5] flex items-center justify-center gap-1.5 bg-[var(--ui-surface-muted)] hover:bg-[var(--ui-surface-strong)] text-[var(--ui-text)] border border-[var(--ui-border)] py-2.5 rounded-xl text-xs font-bold transition-colors active:scale-[0.98]">
+                        <button onClick={(e) => openUpdateForm(e, station)} className={`ui-pressable flex-1 basis-0 flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 py-2.5 rounded-xl text-xs font-bold ${isDark ? 'text-slate-800' : 'text-slate-700'}`}>
                             <Edit3 size={14}/> Update
                         </button>
                       </div>
                       <div className="flex gap-2">
-                        <button onClick={(e) => confirmFuel(e, station.id, confirmationCount)} disabled={hasInteracted} className={`flex-1 py-2 rounded-xl text-xs font-bold transition-colors ${hasInteracted ? 'bg-[var(--ui-surface-muted)] text-[var(--ui-text-muted)] cursor-not-allowed border border-[var(--ui-border)]' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/50 active:scale-[0.98]'}`}>Confirm</button>
-                        <button onClick={(e) => reportFalseInfo(e, station.id)} disabled={hasInteracted} className={`flex-1 py-2 rounded-xl text-xs font-bold transition-colors ${hasInteracted ? 'bg-[var(--ui-surface-muted)] text-[var(--ui-text-muted)] cursor-not-allowed border border-[var(--ui-border)]' : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800/50 active:scale-[0.98]'}`}>Wrong Info</button>
+                        <button onClick={(e) => confirmFuel(e, station.id, confirmationCount)} disabled={hasInteracted} className={`ui-pressable flex-1 py-2 rounded-xl text-xs font-bold ${hasInteracted ? 'bg-slate-50 text-slate-400 cursor-not-allowed border border-slate-100' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'}`}>Confirm</button>
+                        <button onClick={(e) => reportFalseInfo(e, station.id)} disabled={hasInteracted} className={`ui-pressable flex-1 py-2 rounded-xl text-xs font-bold ${hasInteracted ? 'bg-slate-50 text-slate-400 cursor-not-allowed border border-slate-100' : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'}`}>Wrong Info</button>
                       </div>
                     </div>
 
