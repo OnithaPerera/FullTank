@@ -5,13 +5,15 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Fuel, Droplets, Moon, SunMedium, LocateFixed, Info, Navigation } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import LiveFuelAlerts from '../components/LiveFuelAlerts';
 import MapLegend from '../components/MapLegend';
+import StationSearch from '../components/StationSearch';
 import WelcomeModal from '../components/WelcomeModal';
 import NearestSheds from '../components/NearestSheds';
+import { supabase } from './lib/supabase';
+import { coerceStation, fuelKeyToFilter, type FuelFilter, type FuelKey, type Station } from './lib/stations';
 
 const MapBox = dynamic(() => import('../components/MapBox'), { ssr: false });
-
-type FuelFilter = 'all' | '92' | '95' | 'diesel' | 'super_diesel';
 
 const THEME_STORAGE_KEY = 'fulltank_theme';
 const WELCOME_STORAGE_KEY = 'fulltank_welcome_seen';
@@ -23,13 +25,6 @@ const filterOptions = [
   { value: 'diesel' as FuelFilter, label: 'Diesel', icon: Droplets },
   { value: 'super_diesel' as FuelFilter, label: 'Super Diesel', icon: Droplets },
 ];
-
-const fuelKeyToFilter: Record<string, FuelFilter> = {
-  has_92: '92',
-  has_95: '95',
-  has_diesel: 'diesel',
-  has_super_diesel: 'super_diesel'
-};
 
 export default function Home() {
   const [activeFilter, setActiveFilter] = useState<FuelFilter>('all');
@@ -43,7 +38,9 @@ export default function Home() {
 
   const [showNearest, setShowNearest] = useState(false);
   const [targetLoc, setTargetLoc] = useState<{ lat: number; lng: number } | null>(null);
+  const [targetStationId, setTargetStationId] = useState<string | null>(null);
   const [targetTrigger, setTargetTrigger] = useState(0);
+  const [stationIndex, setStationIndex] = useState<Station[]>([]);
 
   const [showWelcome, setShowWelcome] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -58,6 +55,57 @@ export default function Home() {
     }
   }, [isDark]);
 
+  useEffect(() => {
+    let isCancelled = false;
+
+    const loadStations = async () => {
+      const { data, error } = await supabase.from('stations').select('*').order('name');
+
+      if (isCancelled) return;
+
+      if (error) {
+        console.error('STATION INDEX ERROR:', error.message);
+        return;
+      }
+
+      setStationIndex((data ?? []).map((station) => coerceStation(station as Record<string, unknown>)));
+    };
+
+    loadStations();
+
+    const channel = supabase
+      .channel('fulltank-station-index')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'stations' }, (payload) => {
+        const nextRecord = (
+          payload.eventType === 'DELETE' ? payload.old : payload.new
+        ) as Record<string, unknown> | null;
+        if (!nextRecord) return;
+
+        const nextStation = coerceStation(nextRecord);
+
+        setStationIndex((current) => {
+          if (payload.eventType === 'DELETE') {
+            return current.filter((station) => station.id !== nextStation.id);
+          }
+
+          const exists = current.some((station) => station.id === nextStation.id);
+          if (exists) {
+            return current
+              .map((station) => (station.id === nextStation.id ? { ...station, ...nextStation } : station))
+              .sort((left, right) => left.name.localeCompare(right.name));
+          }
+
+          return [...current, nextStation].sort((left, right) => left.name.localeCompare(right.name));
+        });
+      })
+      .subscribe();
+
+    return () => {
+      isCancelled = true;
+      void supabase.removeChannel(channel);
+    };
+  }, []);
+
   const toggleTheme = () => {
     const nextTheme = !isDark;
     setIsDark(nextTheme);
@@ -69,10 +117,21 @@ export default function Home() {
     setShowWelcome(false);
   };
 
-  const handleShowStation = (lat: number, lng: number, fuelKey: string) => {
-    setTargetLoc({ lat, lng });
+  const focusStation = (
+    station: Pick<Station, 'id' | 'lat' | 'lng'>,
+    nextFilter: FuelFilter = 'all',
+  ) => {
+    setTargetLoc({ lat: station.lat, lng: station.lng });
+    setTargetStationId(station.id);
     setTargetTrigger(prev => prev + 1);
-    setActiveFilter(fuelKeyToFilter[fuelKey]);
+    setActiveFilter(nextFilter);
+  };
+
+  const handleShowStation = (
+    station: Pick<Station, 'id' | 'lat' | 'lng'>,
+    fuelKey: FuelKey,
+  ) => {
+    focusStation(station, fuelKeyToFilter[fuelKey]);
   };
 
   return (
@@ -131,15 +190,32 @@ export default function Home() {
             isDark={isDark}
             recenterTrigger={recenterTrigger}
             targetLoc={targetLoc}
+            targetStationId={targetStationId}
             targetTrigger={targetTrigger}
             onUserLocChange={setUserLoc}
           />
+
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-[2100] flex justify-center px-2.5 pt-2.5 sm:px-3 sm:pt-3">
+            <div className="pointer-events-auto">
+              <StationSearch
+                stations={stationIndex}
+                isDark={isDark}
+                onSelectStation={(station) => focusStation(station, 'all')}
+              />
+            </div>
+          </div>
 
           <div className="pointer-events-none absolute inset-x-0 top-0 z-[2000] flex justify-end p-2.5 sm:p-3">
             <div className="pointer-events-auto">
               <MapLegend />
             </div>
           </div>
+
+          <LiveFuelAlerts
+            stations={stationIndex}
+            isDark={isDark}
+            onFocusStation={(station, fuelKey) => focusStation(station, fuelKeyToFilter[fuelKey])}
+          />
 
           <button
             type="button"

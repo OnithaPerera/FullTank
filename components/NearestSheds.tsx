@@ -29,8 +29,7 @@ type NearestShedsProps = {
   trigger: boolean;
   isDark: boolean;
   onClose: () => void;
-  // CHANGED: Now passes the fuel type so the main map can update its filter
-  onShowStation: (lat: number, lng: number, fuel: FuelType) => void; 
+  onShowStation: (station: Pick<Station, 'id' | 'lat' | 'lng'>, fuel: FuelType) => void;
 };
 
 const FUEL_OPTIONS: { id: FuelType; label: string }[] = [
@@ -211,8 +210,10 @@ export default function NearestSheds({ userLoc, trigger, isDark, onClose, onShow
                   <button
                     onClick={() => {
                       if (selectedFuel) {
-                        // CHANGED: Pass the selected fuel back out
-                        onShowStation(station.lat, station.lng, selectedFuel);
+                        onShowStation(
+                          { id: station.id, lat: station.lat, lng: station.lng },
+                          selectedFuel,
+                        );
                       }
                       onClose();
                     }}

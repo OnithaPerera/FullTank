@@ -5,6 +5,13 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEffect, useRef, useState, type Dispatch, type MouseEvent, type SetStateAction } from 'react';
 import { supabase } from '../app/lib/supabase';
+import {
+  buildStationReportPayload,
+  coerceStation,
+  getReporterFingerprint,
+  type FuelKey,
+  type Station,
+} from '../app/lib/stations';
 import { Map, MapPin, Clock, Edit3, ShieldCheck, Fuel, Droplets, X, type LucideIcon } from 'lucide-react';
 
 // --- ICONS ---
@@ -16,9 +23,7 @@ const staleIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/point
 
 // --- TYPES & DATA ---
 const queueOptions = ['Unknown', 'Short (0-15m)', 'Medium (15-45m)', 'Long (45m+)'];
-type FuelKey = 'has_92' | 'has_95' | 'has_diesel' | 'has_super_diesel';
 type FuelType = { key: FuelKey; filterValue: string; label: string; icon: LucideIcon; };
-type Station = { id: string; name: string; lat: number; lng: number; has_92: boolean; has_95: boolean; has_diesel: boolean; has_super_diesel: boolean; queue_length: string | null; confirms: number | null; last_updated: string | null; };
 type EditFormState = { has_92: boolean; has_95: boolean; has_diesel: boolean; has_super_diesel: boolean; queue_length: string; };
 
 const fuelTypes: FuelType[] = [
@@ -89,6 +94,12 @@ function TargetCenterer({ targetLoc, targetTrigger }: { targetLoc: { lat: number
   return null;
 }
 
+function mergeStation(existingStations: Station[], nextStation: Station) {
+  const hasStation = existingStations.some((station) => station.id === nextStation.id);
+  if (!hasStation) return [...existingStations, nextStation];
+  return existingStations.map((station) => (station.id === nextStation.id ? { ...station, ...nextStation } : station));
+}
+
 function StableBoundsTracker({ setStations, pauseBoundsUpdates, onMapClick }: { setStations: Dispatch<SetStateAction<Station[]>>; pauseBoundsUpdates: boolean; onMapClick: () => void; }) {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const cachedBoundsRef = useRef<L.LatLngBounds | null>(null);
@@ -112,9 +123,10 @@ function StableBoundsTracker({ setStations, pauseBoundsUpdates, onMapClick }: { 
         } else if (data) {
           cachedBoundsRef.current = fetchBounds;
           setStations((prev) => {
-            const existingIds = new Set(prev.map(s => s.id));
-            const newStations = data.filter(s => !existingIds.has(s.id));
-            return [...prev, ...newStations];
+            return data.reduce(
+              (current, station) => mergeStation(current, coerceStation(station as Record<string, unknown>)),
+              prev,
+            );
           });
         }
       }, 800);
@@ -130,7 +142,23 @@ function StableBoundsTracker({ setStations, pauseBoundsUpdates, onMapClick }: { 
 }
 
 // --- MAIN EXPORT ---
-export default function MapBox({ activeFilter, isDark, recenterTrigger, targetLoc, targetTrigger, onUserLocChange }: { activeFilter: string; isDark: boolean; recenterTrigger: number; targetLoc: { lat: number; lng: number } | null; targetTrigger: number; onUserLocChange?: (loc: { lat: number, lng: number }) => void }) {
+export default function MapBox({
+  activeFilter,
+  isDark,
+  recenterTrigger,
+  targetLoc,
+  targetStationId,
+  targetTrigger,
+  onUserLocChange,
+}: {
+  activeFilter: string;
+  isDark: boolean;
+  recenterTrigger: number;
+  targetLoc: { lat: number; lng: number } | null;
+  targetStationId: string | null;
+  targetTrigger: number;
+  onUserLocChange?: (loc: { lat: number, lng: number }) => void;
+}) {
   const [stations, setStations] = useState<Station[]>([]);
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [interactedStations, setInteractedStations] = useState<string[]>(() => {
@@ -142,6 +170,7 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger, targetLo
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
+  const [pendingFocusStationId, setPendingFocusStationId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditFormState>({ has_92: false, has_95: false, has_diesel: false, has_super_diesel: false, queue_length: 'Unknown' });
   const markerRefs = useRef<Record<string, L.Marker | null>>({});
 
@@ -155,11 +184,80 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger, targetLo
     }
   }, [onUserLocChange]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel('fulltank-map-stations')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'stations' }, (payload) => {
+        const nextRecord = (
+          payload.eventType === 'DELETE' ? payload.old : payload.new
+        ) as Record<string, unknown> | null;
+        if (!nextRecord) return;
+
+        const nextStation = coerceStation(nextRecord);
+        setStations((current) => {
+          if (payload.eventType === 'DELETE') {
+            return current.filter((station) => station.id !== nextStation.id);
+          }
+
+          if (!current.some((station) => station.id === nextStation.id)) {
+            return current;
+          }
+
+          return mergeStation(current, nextStation);
+        });
+      })
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!targetStationId || targetTrigger === 0) return;
+
+    let isCancelled = false;
+    const frameId = window.requestAnimationFrame(() => {
+      if (isCancelled) return;
+      setEditingId(null);
+      setSelectedStationId(null);
+      setPendingFocusStationId(targetStationId);
+    });
+
+    const loadTargetStation = async () => {
+      const { data, error } = await supabase.from('stations').select('*').eq('id', targetStationId).maybeSingle();
+
+      if (isCancelled || error || !data) return;
+
+      setStations((current) => mergeStation(current, coerceStation(data as Record<string, unknown>)));
+    };
+
+    loadTargetStation();
+
+    return () => {
+      isCancelled = true;
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [targetStationId, targetTrigger]);
+
   const recordInteraction = (id: string) => {
     if (interactedStations.includes(id)) return;
     const nextActions = [...interactedStations, id];
     setInteractedStations(nextActions);
     localStorage.setItem('fulltank_actions', JSON.stringify(nextActions));
+  };
+
+  const persistStationReport = async (
+    station: Station,
+    overrides: Partial<Pick<Station, FuelKey | 'queue_length'>> = {},
+  ) => {
+    const reporterFingerprint = getReporterFingerprint();
+    const reportPayload = buildStationReportPayload(station, reporterFingerprint, overrides);
+    const { error } = await supabase.from('reports').insert([reportPayload]);
+
+    if (error) {
+      console.warn('REPORT INSERT ERROR:', error.message);
+    }
   };
 
   const openUpdateForm = (event: MouseEvent<HTMLButtonElement>, station: Station) => {
@@ -170,25 +268,74 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger, targetLo
 
   const submitUpdate = async (event: MouseEvent<HTMLButtonElement>, id: string) => {
     event.preventDefault(); event.stopPropagation();
-    await supabase.from('stations').update({ has_92: editForm.has_92, has_95: editForm.has_95, has_diesel: editForm.has_diesel, has_super_diesel: editForm.has_super_diesel, queue_length: editForm.queue_length, confirms: 1, last_updated: new Date().toISOString() }).eq('id', id);
-    setEditingId(null); recordInteraction(id);
-    setStations(current => current.map(s => s.id === id ? { ...s, ...editForm, confirms: 1, last_updated: new Date().toISOString() } : s));
+    const nowIso = new Date().toISOString();
+    const nextStation = {
+      has_92: editForm.has_92,
+      has_95: editForm.has_95,
+      has_diesel: editForm.has_diesel,
+      has_super_diesel: editForm.has_super_diesel,
+      queue_length: editForm.queue_length,
+      confirms: 1,
+      last_updated: nowIso,
+    };
+
+    await supabase.from('stations').update(nextStation).eq('id', id);
+    const currentStation = stations.find((station) => station.id === id);
+    if (currentStation) {
+      await persistStationReport({ ...currentStation, ...nextStation });
+    }
+
+    setEditingId(null);
+    recordInteraction(id);
+    setStations((current) => current.map((station) => (station.id === id ? { ...station, ...nextStation } : station)));
   };
 
   const confirmFuel = async (event: MouseEvent<HTMLButtonElement>, id: string, currentConfirms: number) => {
     event.preventDefault(); event.stopPropagation();
     if (interactedStations.includes(id)) return;
-    await supabase.from('stations').update({ confirms: currentConfirms + 1 }).eq('id', id);
+
+    const nowIso = new Date().toISOString();
+    const currentStation = stations.find((station) => station.id === id);
+    const nextStation = currentStation
+      ? { ...currentStation, confirms: currentConfirms + 1, last_updated: nowIso }
+      : null;
+
+    await supabase.from('stations').update({ confirms: currentConfirms + 1, last_updated: nowIso }).eq('id', id);
+    if (nextStation) {
+      await persistStationReport(nextStation);
+    }
+
     recordInteraction(id);
-    setStations(current => current.map(s => s.id === id ? { ...s, confirms: currentConfirms + 1 } : s));
+    setStations((current) =>
+      current.map((station) =>
+        station.id === id ? { ...station, confirms: currentConfirms + 1, last_updated: nowIso } : station,
+      ),
+    );
   };
 
   const reportFalseInfo = async (event: MouseEvent<HTMLButtonElement>, id: string) => {
     event.preventDefault(); event.stopPropagation();
     if (interactedStations.includes(id)) return;
-    await supabase.from('stations').update({ has_92: false, has_95: false, has_diesel: false, has_super_diesel: false, queue_length: 'Unknown', confirms: 0, last_updated: new Date().toISOString() }).eq('id', id);
+
+    const nowIso = new Date().toISOString();
+    const nextStation = {
+      has_92: false,
+      has_95: false,
+      has_diesel: false,
+      has_super_diesel: false,
+      queue_length: 'Unknown',
+      confirms: 0,
+      last_updated: nowIso,
+    };
+
+    await supabase.from('stations').update(nextStation).eq('id', id);
+    const currentStation = stations.find((station) => station.id === id);
+    if (currentStation) {
+      await persistStationReport({ ...currentStation, ...nextStation });
+    }
+
     recordInteraction(id);
-    setStations(current => current.map(s => s.id === id ? { ...s, has_92: false, has_95: false, has_diesel: false, has_super_diesel: false, confirms: 0, last_updated: new Date().toISOString() } : s));
+    setStations((current) => current.map((station) => (station.id === id ? { ...station, ...nextStation } : station)));
   };
 
   const toggleFuelInEditForm = (event: MouseEvent<HTMLButtonElement>, field: FuelKey) => {
@@ -205,6 +352,24 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger, targetLo
     });
     return () => window.cancelAnimationFrame(frameId);
   }, [selectedStationId, stations]);
+
+  useEffect(() => {
+    if (!pendingFocusStationId || typeof window === 'undefined') return;
+
+    const stationExists = stations.some((station) => station.id === pendingFocusStationId);
+    if (!stationExists) return;
+
+    const marker = markerRefs.current[pendingFocusStationId];
+    if (!marker) return;
+
+    const frameId = window.requestAnimationFrame(() => {
+      if (!marker.isPopupOpen()) marker.openPopup();
+      setSelectedStationId(pendingFocusStationId);
+      setPendingFocusStationId(null);
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [pendingFocusStationId, stations]);
 
   return (
     <MapContainer center={[6.8511, 79.8681]} zoom={14} style={{ height: '100%', width: '100%' }}>
