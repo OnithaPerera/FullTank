@@ -1,36 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FullTank
+
+**Live Fuel Availability & Queues in Sri Lanka**
+
+FullTank is a crowdsourced, real-time tracking application built to help Sri Lankans find petrol and diesel availability, along with live queue lengths across the Western Province. 
+
+[![Website](https://img.shields.io/website?url=https%3A%2F%2Ffulltank.vercel.app)](https://fulltank.vercel.app)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+---
+
+## Features
+* **Real-Time Availability:** Crowdsourced updates on Petrol (92/95) and Diesel (Auto/Super).
+* **Queue Tracking:** Live estimates of vehicle queue lengths at CEYPETCO, LIOC, and Sinopec stations.
+* **Interactive Map:** Visual map interface to easily locate the nearest stations with stock.
+* **PWA Ready:** Installable as a Progressive Web App for quick mobile access.
+
+## Tech Stack
+* **Framework:** Next.js (App Router)
+* **Styling:** Tailwind CSS
+* **Database & Auth:** Supabase
+* **Maps:** React Leaflet
+* **Deployment & Analytics:** Vercel
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+Make sure you have Node.js and npm installed on your machine.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+### Installation
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. Clone the repository:
+   ```bash
+   git clone [https://github.com/OnithaPerera/fulltank.git](https://github.com/OnithaPerera/fulltank.git)
+   cd fulltank
+   
+2. Install the dependencies:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+   ```Bash
+   npm install
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+3. Set up your environment variables:
+   Create a .env.local file in the root directory and add your Supabase keys:
 
-## Learn More
+   ```Bash
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 
-To learn more about Next.js, take a look at the following resources:
+4. Run the development server:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+   ```Bash
+   npm run dev
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+5. Open http://localhost:3000 in your browser to see the result.
 
-## Deploy on Vercel
+### Contributing
+Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are greatly appreciated.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+   1. Fork the Project
+   2. Create your Feature Branch (git checkout -b feature/AmazingFeature)
+   3. Commit your Changes (git commit -m 'Add some AmazingFeature')
+   4. Push to the Branch (git push origin feature/AmazingFeature)
+   5. Open a Pull Request
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### License
+Distributed under the MIT License. See LICENSE for more information.
