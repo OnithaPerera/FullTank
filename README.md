@@ -5,7 +5,6 @@
 FullTank is a crowdsourced, real-time tracking application built to help Sri Lankans find petrol and diesel availability, along with live queue lengths across the Western Province. 
 
 [![Website](https://img.shields.io/website?url=https%3A%2F%2Ffulltank.vercel.app)](https://fulltank.vercel.app)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
