@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, Moon, SunMedium, MapPin, ShieldCheck, Clock, AlertTriangle, Send } from 'lucide-react';
+import { ArrowLeft, Moon, SunMedium, MapPin, ShieldCheck, Clock, AlertTriangle, Send, Linkedin, ChevronDown, ChevronUp} from 'lucide-react';
 
 const THEME_STORAGE_KEY = 'fulltank_theme';
 
@@ -25,6 +25,7 @@ const markerGuide = [
 ];
 
 export default function AboutPage() {
+  const [showForm, setShowForm] = useState(false);
   const [feedbackForm, setFeedbackForm] = useState({
     type: 'Add Station',
     message: '',
@@ -112,12 +113,6 @@ export default function AboutPage() {
                 crowdsourced verification. The interface is designed to stay fast and readable on low-end devices
                 while keeping community updates easy to submit.
               </p>
-
-              <div className="mt-5 flex flex-wrap gap-2">
-                <span className="ui-badge">Crowdsourced updates</span>
-                <span className="ui-badge">3-user verification</span>
-                <span className="ui-badge">Queue awareness</span>
-              </div>
             </div>
 
             <div className="ui-panel-muted rounded-[26px] px-5 py-5">
@@ -147,26 +142,7 @@ export default function AboutPage() {
         </section>
 
         <section className="ui-enter ui-enter-delay-2 mt-6 grid gap-4 lg:grid-cols-3">
-          <div className="ui-panel rounded-[28px] px-5 py-5">
-            <div className="flex items-center gap-2">
-              <MapPin className="text-[var(--ui-brand)]" size={18} />
-              <h2 className="text-lg font-semibold">Marker guide</h2>
-            </div>
-
-            <div className="mt-4 space-y-2.5">
-              {markerGuide.map((item) => (
-                <div key={item.title} className="ui-panel-muted rounded-[20px] px-3.5 py-3">
-                  <div className="flex items-start gap-3">
-                    <span className={`mt-1 h-3 w-3 shrink-0 rounded-full ${item.color}`}></span>
-                    <div>
-                      <p className="text-sm font-semibold">{item.title}</p>
-                      <p className="ui-text-muted mt-1 text-sm leading-5">{item.description}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          
 
           <div className="ui-panel rounded-[28px] px-5 py-5">
             <div className="flex items-center gap-2">
@@ -318,6 +294,152 @@ export default function AboutPage() {
                 FullTank aims to improve first-glance clarity without adding heavy visuals or slow interactions.
               </p>
             </div>
+          </div>
+        </section>
+
+        
+      {/* Contributors Section */}
+        <section className="ui-panel ui-enter ui-enter-delay-2 mt-4 mb-8 rounded-[32px] px-5 py-6 sm:px-7 sm:py-7">
+          <h2 className="text-lg font-bold tracking-tight text-[var(--ui-text)]">
+            The Team Behind FullTank
+          </h2>
+          <p className="ui-text-muted mt-1 text-sm">
+            FullTank is an open-source initiative built and maintained by the community.
+          </p>
+
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {/* 1. Onitha Perera */}
+            <a 
+              href="https://www.linkedin.com/in/onitha-perera" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="group flex items-center justify-between gap-3 rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-surface-muted)] p-3 hover:bg-[var(--ui-surface-strong)] transition-all"
+            >
+              <div className="flex items-center gap-3">
+                <img 
+                  src="https://github.com/OnithaPerera.png" 
+                  alt="Onitha Perera" 
+                  className="h-11 w-11 rounded-full bg-slate-200 object-cover"
+                />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold text-[var(--ui-text)] group-hover:underline">Onitha Perera</p>
+                  <p className="truncate text-[11px] font-bold uppercase tracking-wider text-[var(--ui-brand)]">Creator</p>
+                </div>
+              </div>
+              <Linkedin size={18} className="shrink-0 text-[#0a66c2] opacity-80 transition-opacity group-hover:opacity-100" />
+            </a>
+
+            {/* 2. Suven Seoras */}
+            <a 
+              href="https://www.linkedin.com/in/suvenseoras/" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="group flex items-center justify-between gap-3 rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-surface-muted)] p-3 hover:bg-[var(--ui-surface-strong)] transition-all"
+            >
+              <div className="flex items-center gap-3">
+                <img 
+                  src="https://ui-avatars.com/api/?name=Suven+Seoras&background=0f172a&color=fff" 
+                  alt="Suven Seoras" 
+                  className="h-11 w-11 rounded-full bg-slate-200 object-cover"
+                />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold text-[var(--ui-text)] group-hover:underline">Suven Seoras</p>
+                  <p className="truncate text-[11px] font-semibold uppercase tracking-wider text-[var(--ui-text-muted)]">Core Contributor</p>
+                </div>
+              </div>
+              <Linkedin size={18} className="shrink-0 text-[#0a66c2] opacity-80 transition-opacity group-hover:opacity-100" />
+            </a>
+
+            {/* 3. Tharin Fernando */}
+            <a 
+              href="https://www.linkedin.com/in/tharinfernando/" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="group flex items-center justify-between gap-3 rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-surface-muted)] p-3 hover:bg-[var(--ui-surface-strong)] transition-all"
+            >
+              <div className="flex items-center gap-3">
+                <img 
+                  src="https://ui-avatars.com/api/?name=Tharin+Fernando&background=0f172a&color=fff" 
+                  alt="Tharin Fernando" 
+                  className="h-11 w-11 rounded-full bg-slate-200 object-cover"
+                />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold text-[var(--ui-text)] group-hover:underline">Tharin Fernando</p>
+                  <p className="truncate text-[11px] font-semibold uppercase tracking-wider text-[var(--ui-text-muted)]">Core Contributor</p>
+                </div>
+              </div>
+              <Linkedin size={18} className="shrink-0 text-[#0a66c2] opacity-80 transition-opacity group-hover:opacity-100" />
+            </a>
+          </div>
+          
+          {/* Interactive Contribution Form */}
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => setShowForm(!showForm)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--ui-border)] bg-[var(--ui-surface)] px-4 py-2 text-[13px] font-bold text-[var(--ui-text)] shadow-sm transition-all hover:bg-[var(--ui-surface-muted)] active:scale-95"
+            >
+              Want to join the team? Get in touch
+              {showForm ? <ChevronUp size={16} className="text-[var(--ui-brand)]" /> : <ChevronDown size={16} className="text-[var(--ui-brand)]" />}
+            </button>
+
+            {showForm && (
+              <form 
+                action="https://formspree.io/f/mzdjwlrw" 
+                method="POST"
+                className="mt-4 animate-in fade-in slide-in-from-top-2 duration-300 text-left rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-surface-muted)] p-4 sm:p-5"
+              >
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[var(--ui-text-muted)]">Name</label>
+                    <input 
+                      type="text" 
+                      name="name"
+                      required 
+                      className="w-full rounded-xl border border-[var(--ui-border)] bg-[var(--ui-surface)] px-3.5 py-2.5 text-sm text-[var(--ui-text)] outline-none transition-colors focus:border-[var(--ui-brand)] focus:ring-1 focus:ring-[var(--ui-brand)]" 
+                      placeholder="How should we call you?" 
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[var(--ui-text-muted)]">Email / LinkedIn</label>
+                    <input 
+                      type="text" 
+                      name="contact"
+                      required 
+                      className="w-full rounded-xl border border-[var(--ui-border)] bg-[var(--ui-surface)] px-3.5 py-2.5 text-sm text-[var(--ui-text)] outline-none transition-colors focus:border-[var(--ui-brand)] focus:ring-1 focus:ring-[var(--ui-brand)]" 
+                      placeholder="How can we reach you?" 
+                    />
+                  </div>
+                </div>
+                
+                <div className="mt-4">
+                  <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[var(--ui-text-muted)]">How would you like to help?</label>
+                  <textarea 
+                    name="message"
+                    required 
+                    rows={3} 
+                    className="w-full resize-none rounded-xl border border-[var(--ui-border)] bg-[var(--ui-surface)] px-3.5 py-2.5 text-sm text-[var(--ui-text)] outline-none transition-colors focus:border-[var(--ui-brand)] focus:ring-1 focus:ring-[var(--ui-brand)]" 
+                    placeholder="E.g., I'm a Next.js developer, or I can help verify stations in Colombo..."
+                  />
+                </div>
+
+                <div className="mt-5 flex flex-col-reverse items-center justify-between gap-4 sm:flex-row">
+                  <a 
+                    href="https://github.com/OnithaPerera/FullTank" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-[13px] font-semibold text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] hover:underline"
+                  >
+                    Developers: View the GitHub Repo →
+                  </a>
+                  <button 
+                    type="submit" 
+                    className="w-full rounded-xl bg-[var(--ui-brand)] px-5 py-2.5 text-sm font-bold text-white shadow-md transition-opacity hover:opacity-90 sm:w-auto"
+                  >
+                    Send Message
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </section>
 
