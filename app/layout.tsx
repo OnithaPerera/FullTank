@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     description: "Real-time, crowdsourced fuel availability and queue tracker.",
   },
   verification: {
-    google: 'S-3LACDHk6lspiAlJum5hoynIWUO80qHpgfRPtGII5w',
+    google: ['S-3LACDHk6lspiAlJum5hoynIWUO80qHpgfRPtGII5w', 'Sfk1YmMXFT_mYs6U3kLiyoliWVoH6Cqsat_J6OtK1VE']
   },
 };
 
