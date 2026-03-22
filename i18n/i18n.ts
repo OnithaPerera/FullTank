@@ -12,9 +12,9 @@ const translations: Record<Locale, Record<string, unknown>> = {
 };
 
 function getObjectByPath(obj: Record<string, unknown>, path: string): unknown {
-  return path.split('.').reduce((current, segment) => {
+  return path.split('.').reduce<unknown>((current, segment) => {
     if (current && typeof current === 'object' && segment in current) {
-      return current[segment];
+      return (current as Record<string, unknown>)[segment];
     }
     return undefined;
   }, obj);

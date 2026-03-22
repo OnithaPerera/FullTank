@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, type FormEvent } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Lock, Search, AlertTriangle, Trash2, Plus, MessageSquare, MapPin, CheckCircle, LogOut, Moon, SunMedium, Clock, ChevronLeft, ChevronRight, Activity, BarChart3 } from 'lucide-react';
 
@@ -14,6 +14,30 @@ function formatExactTime(dateString: string) {
 }
 
 export default function AdminDashboard() {
+  // Types
+  type Station = {
+    id: string;
+    name: string;
+    lat: number;
+    lng: number;
+    has_92: boolean;
+    has_95: boolean;
+    has_diesel: boolean;
+    has_super_diesel: boolean;
+    queue_length: string | null;
+    confirms: number | null;
+    last_updated: string | null;
+  };
+
+  type FeedbackItem = {
+    id: string | number;
+    type: string;
+    status: string;
+    message?: string;
+    contact?: string;
+    created_at?: string;
+  };
+
   // Auth & Theme State
   const [session, setSession] = useState<null | object>(null);
   const [email, setEmail] = useState('');
@@ -23,8 +47,8 @@ export default function AdminDashboard() {
 
   // Dashboard State
   const [activeTab, setActiveTab] = useState('stations');
-  const [stations, setStations] = useState<Record<string, unknown>[]>([]);
-  const [feedback, setFeedback] = useState<Record<string, unknown>[]>([]);
+  const [stations, setStations] = useState<Station[]>([]);
+  const [feedback, setFeedback] = useState<FeedbackItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'recent' | 'name'>('recent');
 
@@ -73,7 +97,7 @@ export default function AdminDashboard() {
   }, [searchTerm, sortBy]);
 
   // --- AUTHENTICATION ACTIONS ---
-  const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoggingIn(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -108,7 +132,7 @@ export default function AdminDashboard() {
     await supabase.from('stations').delete().eq('id', id);
   };
   
-  const addStation = async (e: FormEvent<HTMLFormElement>) => {
+  const addStation = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     if (!newName || !newLat || !newLng) return alert("Fill in Name, Lat, and Lng.");
     const { data, error } = await supabase.from('stations').insert([{ name: newName, lat: parseFloat(newLat), lng: parseFloat(newLng), has_92: false, has_95: false, has_diesel: false, has_super_diesel: false, confirms: 0, queue_length: 'Unknown' }]).select(); 
@@ -117,12 +141,12 @@ export default function AdminDashboard() {
   };
 
   // --- FEEDBACK ACTIONS ---
-  const resolveFeedback = async (id: string) => {
+  const resolveFeedback = async (id: string | number) => {
     setFeedback(feedback.map(fb => fb.id === id ? { ...fb, status: 'resolved' } : fb));
     await supabase.from('feedback').update({ status: 'resolved' }).eq('id', id);
   };
   
-  const deleteFeedback = async (id: string) => {
+  const deleteFeedback = async (id: string | number) => {
     if(!confirm("Delete this message?")) return;
     setFeedback(feedback.filter(fb => fb.id !== id));
     await supabase.from('feedback').delete().eq('id', id);
@@ -133,12 +157,12 @@ export default function AdminDashboard() {
   
   if (sortBy === 'recent') {
     filteredStations.sort((a, b) => {
-      const timeA = new Date(a.last_updated || 0).getTime();
-      const timeB = new Date(b.last_updated || 0).getTime();
+      const timeA = new Date((a.last_updated as string) || 0).getTime();
+      const timeB = new Date((b.last_updated as string) || 0).getTime();
       return timeB - timeA;
     });
   } else {
-    filteredStations.sort((a, b) => a.name.localeCompare(b.name));
+    filteredStations.sort((a, b) => (a.name as string).localeCompare(b.name as string));
   }
 
   const totalPages = Math.ceil(filteredStations.length / itemsPerPage);
@@ -149,7 +173,7 @@ export default function AdminDashboard() {
 
   // --- METRICS CALCULATIONS ---
   const totalActiveStations = stations.length;
-  const totalConfirms = stations.reduce((sum, st) => sum + (st.confirms || 0), 0);
+  const totalConfirms = stations.reduce((sum, st) => sum + Number(st.confirms || 0), 0);
   const pendingReports = feedback.filter(f => f.status === 'pending').length;
 
   // SECURE LOGIN SCREEN
@@ -323,13 +347,17 @@ export default function AdminDashboard() {
                         </select>
                       </td>
                       <td className="p-4 text-center">
-                        <input type="number" value={station.confirms} onChange={(e) => updateStation(station.id, 'confirms', parseInt(e.target.value) || 0)} 
-                          className={`w-16 border rounded-lg p-1.5 text-center text-xs font-bold focus:outline-none focus:border-red-500 ${isDark ? 'bg-slate-950 border-slate-700 text-emerald-400' : 'bg-slate-50 border-slate-300 text-emerald-700'}`} />
+                        <input
+                          type="number"
+                          value={station.confirms ?? 0}
+                          onChange={(e) => updateStation(station.id, 'confirms', parseInt(e.target.value) || 0)}
+                          className={`w-16 border rounded-lg p-1.5 text-center text-xs font-bold focus:outline-none focus:border-red-500 ${isDark ? 'bg-slate-950 border-slate-700 text-emerald-400' : 'bg-slate-50 border-slate-300 text-emerald-700'}`}
+                        />
                       </td>
                       
                       <td className="p-4 text-center text-xs font-medium whitespace-nowrap">
                         <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>
-                          {formatExactTime(station.last_updated)}
+                          {formatExactTime(station.last_updated ?? '')}
                         </span>
                       </td>
 
@@ -403,7 +431,7 @@ export default function AdminDashboard() {
                       {item.type}
                     </span>
                     <span className={`text-[11px] font-semibold flex items-center gap-1 ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-                       <Clock size={12}/> {formatExactTime(item.created_at)}
+                        <Clock size={12}/> {formatExactTime(item.created_at ?? '')}
                     </span>
                   </div>
                   
