@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 're
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEffect, useRef, useState, type Dispatch, type MouseEvent, type SetStateAction } from 'react';
+import { useI18n } from './LanguageProvider';
 import { supabase } from '../app/lib/supabase';
 import { Map, MapPin, Clock, Edit3, ShieldCheck, Fuel, Droplets, Share2, Check, X, type LucideIcon } from 'lucide-react';
 
@@ -137,6 +138,7 @@ function StableBoundsTracker({ setStations, pauseBoundsUpdates, onMapClick }: { 
 
 // --- MAIN EXPORT ---
 export default function MapBox({ activeFilter, isDark, recenterTrigger, targetLoc, targetStationId, targetTrigger, onUserLocChange }: { activeFilter: string; isDark: boolean; recenterTrigger: number; targetLoc: { lat: number; lng: number } | null; targetStationId: string | null; targetTrigger: number; onUserLocChange?: (loc: { lat: number, lng: number }) => void }) {
+  const { t } = useI18n();
   const [stations, setStations] = useState<Station[]>([]);
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [interactedStations, setInteractedStations] = useState<string[]>(() => {
@@ -316,8 +318,8 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger, targetLo
         <Marker position={[userLoc.lat, userLoc.lng]} icon={blueIcon}>
           <Popup className="custom-popup" closeButton={false}>
             <div className="p-3 bg-white rounded-xl shadow-lg w-48 font-sans">
-              <p className="text-[10px] uppercase font-bold text-blue-500 tracking-wider">Your Location</p>
-              <h3 className="mt-1 text-sm font-bold text-slate-900">You are here</h3>
+              <p className="text-[10px] uppercase font-bold text-blue-500 tracking-wider">{t('mapBox.yourLocation')}</p>
+              <h3 className="mt-1 text-sm font-bold text-slate-900">{t('mapBox.youAreHere')}</h3>
             </div>
           </Popup>
         </Marker>
@@ -347,10 +349,10 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger, targetLo
         }
 
         const stationState = !hasAnyFuel ? 'empty' : isStale ? 'stale' : confirmationCount >= 3 ? 'verified' : 'pending';
-        const distanceStr = userLoc ? `${calculateDistance(userLoc.lat, userLoc.lng, station.lat, station.lng)} km away` : 'Distance loading';
+        const distanceStr = userLoc ? `${calculateDistance(userLoc.lat, userLoc.lng, station.lat, station.lng)} km away` : t('mapBox.distanceLoading');
         const gMapsLink = `https://www.google.com/maps/dir/?api=1&destination=${station.lat},${station.lng}`;
         const hasInteracted = interactedStations.includes(station.id);
-        const displayTime = confirmationCount === 0 ? 'No updates yet' : timeAgo(station.last_updated);
+        const displayTime = confirmationCount === 0 ? t('mapBox.noUpdates') : timeAgo(station.last_updated);
         const isEditing = editingId === station.id;
 
         return (
@@ -365,7 +367,7 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger, targetLo
                   <div>
                     <div className="flex justify-between items-center mb-5">
                       <div>
-                        <h3 className={`font-bold text-base ${isDark ? 'text-white' : 'text-slate-900'}`}>Update Station</h3>
+                        <h3 className={`font-bold text-base ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('mapBox.updateStation')}</h3>
                         <p className={`text-xs font-medium truncate max-w-[200px] ${isDark ? 'text-slate-300' : 'text-slate-600'}`} title={station.name}>{station.name}</p>
                       </div>
                       {/* FIX: Tell Leaflet to close the popup */}
@@ -378,7 +380,7 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger, targetLo
                     </div>
 
                     <div className="mb-4">
-                      <div className="text-[10px] uppercase font-bold text-slate-600 mb-2">Fuel Status</div>
+                      <div className="text-[10px] uppercase font-bold text-slate-600 mb-2">{t('mapBox.fuelStatus')}</div>
                       <div className="grid grid-cols-2 gap-2">
                         {fuelTypes.map((fuel) => {
                           const Icon = fuel.icon;
@@ -412,7 +414,7 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger, targetLo
                                 />
                                 <span className="text-xs font-bold">{fuel.label}</span>
                               </div>
-                              <span className={`text-[10px] font-semibold ${isDark ? '' : isSelected ? 'text-emerald-700' : 'text-slate-700'}`}>{isSelected ? 'Available' : 'Empty'}</span>
+                              <span className={`text-[10px] font-semibold ${isDark ? '' : isSelected ? 'text-emerald-700' : 'text-slate-700'}`}>{isSelected ? t('mapBox.available') : t('mapBox.empty')}</span>
                             </button>
                           );
                         })}
@@ -420,7 +422,7 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger, targetLo
                     </div>
 
                     <div className="mb-5">
-                      <div className="text-[10px] uppercase font-bold text-slate-600 mb-2">Queue Length</div>
+                      <div className="text-[10px] uppercase font-bold text-slate-600 mb-2">{t('mapBox.queueLength')}</div>
                       <select
                         value={editForm.queue_length}
                         onChange={(e) => setEditForm(c => ({ ...c, queue_length: e.target.value }))}
@@ -468,14 +470,14 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger, targetLo
                     {/* Trust & Queue Cards */}
                     <div className="grid grid-cols-2 gap-2 mb-5">
                       <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
-                        <div className="text-[10px] uppercase font-bold text-slate-600 mb-0.5">Queue</div>
-                        <div className="text-sm font-bold text-slate-800">{station.queue_length || 'Unknown'}</div>
+                        <div className="text-[10px] uppercase font-bold text-slate-600 mb-0.5">{t('mapBox.queue')}</div>
+                        <div className="text-sm font-bold text-slate-800">{station.queue_length || t('nearestSheds.queueUnknown')}</div>
                       </div>
                       <div className={`rounded-xl p-3 border ${stationState === 'verified' ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'}`}>
-                        <div className="text-[10px] uppercase font-bold text-slate-600 mb-0.5">Trust</div>
+                        <div className="text-[10px] uppercase font-bold text-slate-600 mb-0.5">{t('mapBox.trust')}</div>
                         <div className={`text-sm font-bold flex items-center gap-1.5 ${stationState === 'verified' ? 'text-emerald-700' : 'text-slate-800'}`}>
                           {stationState === 'verified' && <ShieldCheck size={14} />}
-                          {confirmationCount >= 3 ? 'Verified' : `${confirmationCount}/3 Confirms`}
+                          {confirmationCount >= 3 ? t('mapBox.verified') : `${confirmationCount}/3 ${t('nearestSheds.confirmsLabel')}`}
                         </div>
                       </div>
                     </div>
@@ -487,7 +489,7 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger, targetLo
                         {fuelTypes.map((fuel) => {
                           const Icon = fuel.icon;
                           const isPresent = Boolean(station[fuel.key]);
-                          const fuelStatusLabel = isPresent ? 'Available' : 'Unavailable';
+                          const fuelStatusLabel = isPresent ? t('mapBox.available') : t('mapBox.unavailable');
                           return (
                             <div
                               key={fuel.key}
@@ -540,22 +542,21 @@ export default function MapBox({ activeFilter, isDark, recenterTrigger, targetLo
                       <div className="flex gap-2">
                         <a href={gMapsLink} target="_blank" rel="noreferrer" className="ui-pressable flex-1 basis-0 flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 py-2.5 rounded-xl text-xs font-bold shadow-sm">
                             <Map size={14} className="text-white"/> 
-                            <span className="text-white">Directions</span>
+                            <span className="text-white">{t('mapBox.mapDirection')}</span>
                         </a>
                         <button onClick={(e) => copyStationLink(e, station.id)} className={`ui-pressable flex-[0.55] flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition-colors active:scale-[0.98] ${copiedStationId === station.id ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/50' : 'bg-[var(--ui-surface-muted)] hover:bg-[var(--ui-surface-strong)] text-[var(--ui-text)] border border-[var(--ui-border)]'}`}>
                             {copiedStationId === station.id ? <Check size={14}/> : <Share2 size={14}/>}
-                            <span>{copiedStationId === station.id ? 'Copied' : 'Share'}</span>
+                            <span>{copiedStationId === station.id ? t('mapBox.copyDone') : t('mapBox.shareAction')}</span>
                         </button>
                         <button onClick={(e) => openUpdateForm(e, station)} className="ui-pressable flex-[0.5] flex items-center justify-center gap-1.5 bg-[var(--ui-surface-muted)] hover:bg-[var(--ui-surface-strong)] text-[var(--ui-text)] border border-[var(--ui-border)] py-2.5 rounded-xl text-xs font-bold transition-colors active:scale-[0.98]">
-                            <Edit3 size={14}/> Update
+                            <Edit3 size={14}/> {t('mapBox.update')}
                         </button>
                       </div>
                       <div className="flex gap-2">
-                        <button onClick={(e) => confirmFuel(e, station.id, confirmationCount)} disabled={hasInteracted} className={`ui-pressable flex-1 py-2 rounded-xl text-xs font-bold ${hasInteracted ? 'bg-slate-50 text-slate-400 cursor-not-allowed border border-slate-100' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'}`}>Confirm</button>
-                        <button onClick={(e) => reportFalseInfo(e, station.id)} disabled={hasInteracted} className={`ui-pressable flex-1 py-2 rounded-xl text-xs font-bold ${hasInteracted ? 'bg-slate-50 text-slate-400 cursor-not-allowed border border-slate-100' : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'}`}>Wrong Info</button>
+                        <button onClick={(e) => confirmFuel(e, station.id, confirmationCount)} disabled={hasInteracted} className={`ui-pressable flex-1 py-2 rounded-xl text-xs font-bold ${hasInteracted ? 'bg-slate-50 text-slate-400 cursor-not-allowed border border-slate-100' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'}`}>{t('mapBox.confirm')}</button>
+                        <button onClick={(e) => reportFalseInfo(e, station.id)} disabled={hasInteracted} className={`ui-pressable flex-1 py-2 rounded-xl text-xs font-bold ${hasInteracted ? 'bg-slate-50 text-slate-400 cursor-not-allowed border border-slate-100' : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'}`}>{t('mapBox.wrongInfo')}</button>
                       </div>
                     </div>
-
                   </div>
                 )}
               </div>

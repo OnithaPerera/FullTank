@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
 import { Lock, Search, AlertTriangle, Trash2, Plus, MessageSquare, MapPin, CheckCircle, LogOut, Moon, SunMedium, Clock, ChevronLeft, ChevronRight, Activity, BarChart3 } from 'lucide-react';
 
@@ -15,7 +15,7 @@ function formatExactTime(dateString: string) {
 
 export default function AdminDashboard() {
   // Auth & Theme State
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<null | object>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -23,8 +23,8 @@ export default function AdminDashboard() {
 
   // Dashboard State
   const [activeTab, setActiveTab] = useState('stations');
-  const [stations, setStations] = useState<any[]>([]);
-  const [feedback, setFeedback] = useState<any[]>([]);
+  const [stations, setStations] = useState<Record<string, unknown>[]>([]);
+  const [feedback, setFeedback] = useState<Record<string, unknown>[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'recent' | 'name'>('recent');
 
@@ -68,11 +68,12 @@ export default function AdminDashboard() {
 
   // Reset pagination when searching or sorting
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentPage(1);
   }, [searchTerm, sortBy]);
 
   // --- AUTHENTICATION ACTIONS ---
-  const handleLogin = async (e: any) => {
+  const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoggingIn(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -86,8 +87,8 @@ export default function AdminDashboard() {
   };
 
   // --- STATION ACTIONS ---
-  const updateStation = async (id: string, field: string, value: any) => {
-    setStations(stations.map(st => st.id === id ? { ...st, [field]: value } : st));
+  const updateStation = async (id: string, field: string, value: unknown) => {
+    setStations(stations.map(st => (st.id === id ? { ...st, [field]: value } : st)));
     await supabase.from('stations').update({ [field]: value, last_updated: new Date().toISOString() }).eq('id', id);
   };
   
@@ -107,7 +108,7 @@ export default function AdminDashboard() {
     await supabase.from('stations').delete().eq('id', id);
   };
   
-  const addStation = async (e: any) => {
+  const addStation = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!newName || !newLat || !newLng) return alert("Fill in Name, Lat, and Lng.");
     const { data, error } = await supabase.from('stations').insert([{ name: newName, lat: parseFloat(newLat), lng: parseFloat(newLng), has_92: false, has_95: false, has_diesel: false, has_super_diesel: false, confirms: 0, queue_length: 'Unknown' }]).select(); 
@@ -128,7 +129,7 @@ export default function AdminDashboard() {
   };
 
   // --- FILTERING, SORTING & PAGINATION LOGIC ---
-  let filteredStations = [...stations].filter(st => st.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredStations = [...stations].filter(st => (String(st.name) || '').toLowerCase().includes(searchTerm.toLowerCase()));
   
   if (sortBy === 'recent') {
     filteredStations.sort((a, b) => {

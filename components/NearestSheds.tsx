@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useI18n } from './LanguageProvider';
 import { supabase } from '../app/lib/supabase';
 
 export type FuelType = 'has_92' | 'has_95' | 'has_diesel' | 'has_super_diesel';
@@ -61,15 +62,17 @@ function getQueuePenalty(queueLength: string | null) {
 }
 
 export default function NearestSheds({ userLoc, trigger, isDark, onClose, onShowStation }: NearestShedsProps) {
+  const { t } = useI18n();
   const [selectedFuel, setSelectedFuel] = useState<FuelType | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<RankedStation[]>([]);
-  const [message, setMessage] = useState<string | null>("Select the fuel type you need above.");
+  const [message, setMessage] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(trigger);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     if (trigger) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsMounted(true);
       const frame = window.requestAnimationFrame(() => setIsVisible(true));
       return () => window.cancelAnimationFrame(frame);
@@ -87,7 +90,7 @@ export default function NearestSheds({ userLoc, trigger, isDark, onClose, onShow
       if (!trigger) return;
       if (!selectedFuel) {
         setResults([]);
-        setMessage('Select a fuel type above.');
+        setMessage(t('nearestSheds.selectFuel'));
         setIsLoading(false);
         return;
       }
@@ -96,7 +99,7 @@ export default function NearestSheds({ userLoc, trigger, isDark, onClose, onShow
       setMessage(null);
 
       if (!userLoc) {
-        setMessage('Location not available. Please allow location access.');
+        setMessage(t('nearestSheds.locationNotAvailable'));
         setIsLoading(false);
         return;
       }
@@ -107,7 +110,7 @@ export default function NearestSheds({ userLoc, trigger, isDark, onClose, onShow
       if (isCancelled) return;
 
       if (error || !data) {
-        setMessage('Unable to retrieve stations.');
+        setMessage(t('nearestSheds.unable'));
         setIsLoading(false);
         return;
       }
@@ -139,7 +142,7 @@ export default function NearestSheds({ userLoc, trigger, isDark, onClose, onShow
         .slice(0, 3);
 
       setResults(rankedStations);
-      if (rankedStations.length === 0) setMessage('No matching stations found nearby.');
+      if (rankedStations.length === 0) setMessage(t('nearestSheds.noneFound'));
       setIsLoading(false);
     };
 
@@ -161,11 +164,11 @@ export default function NearestSheds({ userLoc, trigger, isDark, onClose, onShow
         
         <div className="mb-4 flex items-start justify-between">
           <div>
-            <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Find Nearby Sheds</h2>
-            <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Select what you are looking for:</p>
+            <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('nearestSheds.headline')}</h2>
+            <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('nearestSheds.subline')}</p>
           </div>
           <button onClick={onClose} className={`ui-pressable rounded-full px-3 py-1 text-xs font-bold ${isDark ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>
-            Close
+            {t('nearestSheds.close')}
           </button>
         </div>
 
@@ -193,7 +196,7 @@ export default function NearestSheds({ userLoc, trigger, isDark, onClose, onShow
         <div className="min-h-[150px]">
           {isLoading && (
              <div className={`flex items-center justify-center h-full rounded-xl py-8 ${isDark ? 'bg-slate-800/50 text-slate-400' : 'bg-slate-50 text-slate-600'}`}>
-               <span className="text-sm font-semibold">Searching map...</span>
+               <span className="text-sm font-semibold">{t('nearestSheds.searching')}</span>
              </div>
           )}
 
@@ -219,8 +222,8 @@ export default function NearestSheds({ userLoc, trigger, isDark, onClose, onShow
                   </div>
 
                   <div className={`flex items-center gap-4 text-xs font-medium mb-4 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                    <p><span className={isDark ? 'text-slate-500' : 'text-slate-500'}>Queue:</span> {station.queue_length || 'Unknown'}</p>
-                    <p><span className={isDark ? 'text-slate-500' : 'text-slate-500'}>Confirms:</span> {station.confirms ?? 0}</p>
+                    <p><span className={isDark ? 'text-slate-500' : 'text-slate-500'}>{t('nearestSheds.queueLabel')}</span> {station.queue_length || t('nearestSheds.queueUnknown')}</p>
+                    <p><span className={isDark ? 'text-slate-500' : 'text-slate-500'}>{t('nearestSheds.confirmsLabel')}</span> {station.confirms ?? 0}</p>
                   </div>
 
                   <button
