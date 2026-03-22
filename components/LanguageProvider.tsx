@@ -25,6 +25,10 @@ export default function LanguageProvider({ children }: { children: React.ReactNo
     if (nextLocale !== locale) {
       setCurrentLocale(nextLocale);
       setLocaleState(nextLocale);
+      if (typeof window !== 'undefined') {
+        // ensure full re-render with locale changes applied everywhere
+        window.location.reload();
+      }
     }
   };
 
