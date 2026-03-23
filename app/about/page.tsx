@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useI18n } from '../../components/LanguageProvider';
 import { supabase } from '../lib/supabase';
 import { ArrowLeft, Moon, SunMedium, MapPin, ShieldCheck, Clock, AlertTriangle, Send, Linkedin, ChevronDown, ChevronUp} from 'lucide-react';
 
@@ -25,6 +26,7 @@ const markerGuide = [
 ];
 
 export default function AboutPage() {
+  const { t } = useI18n();
   const [showForm, setShowForm] = useState(false);
   const [feedbackForm, setFeedbackForm] = useState({
     type: 'Add Station',
@@ -101,17 +103,15 @@ export default function AboutPage() {
                   <Image src="/logo.svg" alt="FullTank logo" width={38} height={38} priority />
                 </div>
                 <div>
-                  <p className="ui-kicker">About FullTank</p>
+                  <p className="ui-kicker">{t('about.kicker')}</p>
                   <h1 className="mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">
-                    A fuel utility built for quick, reliable decisions.
+                    {t('about.title')}
                   </h1>
                 </div>
               </div>
 
               <p className="ui-text-muted mt-4 max-w-2xl text-sm leading-7 sm:text-base">
-                FullTank is a lightweight mobile-first map for checking fuel availability, queue estimates, and
-                crowdsourced verification. The interface is designed to stay fast and readable on low-end devices
-                while keeping community updates easy to submit.
+                {t('about.text')}
               </p>
             </div>
 
@@ -119,22 +119,21 @@ export default function AboutPage() {
               <div className="flex items-start gap-3">
                 <AlertTriangle className="mt-1 text-[var(--ui-brand)]" size={20} />
                 <div>
-                  <p className="text-sm font-semibold">Current rollout</p>
+                  <p className="text-sm font-semibold">{t('about.rollout')}</p>
                   <p className="ui-text-muted mt-1 text-sm leading-6">
-                    Data is currently strongest around the Western Province while the community grows. Reports from
-                    other districts still help improve coverage.
+                    {t('about.rolloutText')}
                   </p>
                 </div>
               </div>
 
               <div className="mt-4 space-y-3 text-sm">
                 <div className="rounded-[18px] border border-[var(--ui-border)] px-4 py-3">
-                  <p className="font-semibold">Verification threshold</p>
-                  <p className="ui-text-muted mt-1">Stations turn green after 3 separate confirms.</p>
+                  <p className="font-semibold">{t('about.verification')}</p>
+                  <p className="ui-text-muted mt-1">{t('about.verificationText')}</p>
                 </div>
                 <div className="rounded-[18px] border border-[var(--ui-border)] px-4 py-3">
-                  <p className="font-semibold">Stale reports</p>
-                  <p className="ui-text-muted mt-1">Gray markers indicate older community data.</p>
+                  <p className="font-semibold">{t('about.staleReports')}</p>
+                  <p className="ui-text-muted mt-1">{t('about.staleReportsText')}</p>
                 </div>
               </div>
             </div>

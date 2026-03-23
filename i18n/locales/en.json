@@ -1,0 +1,174 @@
+{
+  "langName": "English",
+  "home": {
+    "kicker": "Live Fuel Map",
+    "title": "FullTank",
+    "tagline": "Fast community fuel updates built for quick map scanning.",
+    "nearby": "Nearby",
+    "about": "About",
+    "nearbyTip": "Nearby sheds",
+    "aboutTip": "About and reports",
+    "locate": "Locate me",
+    "badges": {
+      "reliable": "Reliable community signals",
+      "lightweight": "Lightweight on mobile",
+      "tapMarkers": "Tap markers to confirm or update"
+    },
+    "fuelFilters": {
+      "all": "All Fuels",
+      "92": "Petrol 92",
+      "95": "Petrol 95",
+      "diesel": "Diesel",
+      "super_diesel": "Super Diesel"
+    },
+    "languageLabel": "Language",
+    "languageOptions": {
+      "en": "English",
+      "si": "සිංහල"
+    }
+  },
+  "mapLegend": {
+    "title": "Map Guide",
+    "subtitle": "Station status markers.",
+    "open": "Open Map Guide",
+    "close": "Close Map Guide",
+    "status": {
+      "green": "Verified Available",
+      "yellow": "Awaiting Confirms",
+      "red": "Empty / No Fuel",
+      "gray": "Data > 3 hours old"
+    },
+    "color": {
+      "green": "Green",
+      "yellow": "Yellow",
+      "red": "Red",
+      "gray": "Gray"
+    },
+    "note": "Yellow markers require 3 separate user confirmations to turn Green."
+  },
+  "welcomeModal": {
+    "kicker": "First Visit",
+    "headline": "How the map works",
+    "description": "Marker color is the fastest way to scan the map. Open any station popup for queue details, trust status, explicit per-fuel availability, directions, or a fresh update form.",
+    "status": {
+      "reportedUnavailable": {
+        "label": "Reported Unavailable",
+        "desc": "Latest report says the station is out of stock."
+      },
+      "awaitingReview": {
+        "label": "Awaiting Review",
+        "desc": "Reported by the community and still waiting for more confirmations."
+      },
+      "verified": {
+        "label": "Verified",
+        "desc": "Fresh report with 3 confirmations behind it."
+      },
+      "stale": {
+        "label": "Stale Report",
+        "desc": "Older information that may no longer be reliable."
+      }
+    },
+    "trustHeading": "Trust and confirmations",
+    "trustDescription": "Yellow markers turn green after 3 separate users tap Confirm. If the station changes, use Update to send a fresh report with queue and fuel details.",
+    "gotIt": "Got it",
+    "learnMore": "Learn More"
+  },
+  "nearestSheds": {
+    "headline": "Find Nearby Sheds",
+    "subline": "Select what you are looking for:",
+    "close": "Close",
+    "searching": "Searching map...",
+    "noFuel"
+    : "Select the fuel type you need above.",
+    "selectFuel": "Select a fuel type above.",
+    "locationNotAvailable": "Location not available. Please allow location access.",
+    "unable": "Unable to retrieve stations.",
+    "noneFound": "No matching stations found nearby.",
+    "stationMatch": "{index} Match",
+    "queueLabel": "Queue:",
+    "confirmsLabel": "Confirms:",
+    "showOnMap": "Show on Map",
+    "share": "Share",
+    "copied": "Copied",
+    "directions": "Directions",
+    "confirm": "Confirm",
+    "wrongInfo": "Wrong Info",
+    "queueUnknown": "Unknown"
+  },
+  "mapBox": {
+    "yourLocation": "Your Location",
+    "youAreHere": "You are here",
+    "distanceLoading": "Distance loading",
+    "updateStation": "Update Station",
+    "fuelStatus": "Fuel Status",
+    "queueLength": "Queue Length",
+    "available": "Available",
+    "empty": "Empty",
+    "unavailable": "Unavailable",
+    "queue": "Queue",
+    "trust": "Trust",
+    "verified": "Verified",
+    "noUpdates": "No updates yet",
+    "mapDirection": "Directions",
+    "shareAction": "Share",
+    "copyDone": "Copied",
+    "update": "Update",
+    "confirm": "Confirm",
+    "wrongInfo": "Wrong Info"
+  },
+  "about": {
+    "kicker": "About FullTank",
+    "title": "A fuel utility built for quick, reliable decisions.",
+    "text": "FullTank is a lightweight mobile-first map for checking fuel availability, queue estimates, and crowdsourced verification. The interface is designed to stay fast and readable on low-end devices while keeping community updates easy to submit.",
+    "rollout": "Current rollout",
+    "rolloutText": "Data is currently strongest around the Western Province while the community grows. Reports from other districts still help improve coverage.",
+    "verification": "Verification threshold",
+    "verificationText": "Stations turn green after 3 separate confirms.",
+    "staleReports": "Stale reports",
+    "staleReportsText": "Gray markers indicate older community data.",
+    "trustSystem": "Trust system",
+    "whyItMatters": "Why it matters",
+    "whyItMattersText": "A single update is helpful but not always enough. Community confirmations make the signal more reliable before the marker turns green.",
+    "howToHelp": "How to help",
+    "howToHelpText": "Tap Confirm when the information is correct. Use Update Station Data when availability or queue conditions change.",
+    "goodReports": "Good reports are specific",
+    "details": "Helpful details",
+    "detailsText": "Include station name, area, Google Maps links, queue estimate, or the exact issue you noticed.",
+    "whatNext": "What happens next",
+    "whatNextText": "Reports go directly to the developer and are used to improve coverage, clean up map data, and fix product issues.",
+    "reports": "Reports",
+    "contactFeedback": "Contact and feedback",
+    "reportType": "Report type",
+    "addMissing": "Add a Missing Station",
+    "removeStation": "Remove / Delete a Station",
+    "wrongLocation": "Incorrect Station Data / Location",
+    "improvement": "App Improvement Suggestion",
+    "bug": "Report a Bug",
+    "other": "Other",
+    "detailsLabel": "Details",
+    "detailsPlaceholder": "Share the station name, exact issue, Google Maps link, or any details that help verify the report.",
+    "contactLabel": "Contact (optional)",
+    "contactPlaceholder": "Email or phone number",
+    "send": "Submit Report",
+    "sending": "Sending...",
+    "thankYou": "Thank you. Your report has been sent to the developer.",
+    "quickNotes": "Quick Notes",
+    "bestForMissing": "Best for missing stations",
+    "bestForMissingText": "Include the station name and a Google Maps link if possible.",
+    "bestForBugs": "Best for bugs",
+    "bestForBugsText": "Mention the page, the action you tried, and what happened instead.",
+    "madeFor": "Made for practical use",
+    "madeForText": "FullTank aims to improve first-glance clarity without adding heavy visuals or slow interactions.",
+    "theTeam": "The Team Behind FullTank",
+    "openSource": "FullTank is an open-source initiative built and maintained by the community.",
+    "joinTeam": "Want to join the team? Get in touch"
+  },
+  "admin": {
+    "secureAccess": "Secure Admin Access",
+    "adminEmail": "Admin Email",
+    "adminPassword": "Admin Password",
+    "login": "Log In",
+    "logout": "Sign Out",
+    "pageTitle": "FullTank Admin"
+  }
+}

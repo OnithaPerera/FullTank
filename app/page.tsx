@@ -3,8 +3,9 @@
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Fuel, Droplets, Moon, SunMedium, LocateFixed, Info, Navigation } from 'lucide-react';
+import { Fuel, Droplets, Moon, SunMedium, LocateFixed, Info, Navigation, type LucideIcon } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useI18n } from '../components/LanguageProvider';
 import MapLegend from '../components/MapLegend';
 import WelcomeModal from '../components/WelcomeModal';
 import NearestSheds from '../components/NearestSheds';
@@ -17,12 +18,12 @@ type FuelFilter = 'all' | '92' | '95' | 'diesel' | 'super_diesel';
 const THEME_STORAGE_KEY = 'fulltank_theme';
 const WELCOME_STORAGE_KEY = 'fulltank_welcome_seen';
 
-const filterOptions = [
-  { value: 'all' as FuelFilter, label: 'All Fuels', icon: Fuel },
-  { value: '92' as FuelFilter, label: 'Petrol 92', icon: Fuel },
-  { value: '95' as FuelFilter, label: 'Petrol 95', icon: Fuel },
-  { value: 'diesel' as FuelFilter, label: 'Diesel', icon: Droplets },
-  { value: 'super_diesel' as FuelFilter, label: 'Super Diesel', icon: Droplets },
+const filterOptions: { value: FuelFilter; labelKey: string; icon: LucideIcon }[] = [
+  { value: 'all', labelKey: 'home.fuelFilters.all', icon: Fuel },
+  { value: '92', labelKey: 'home.fuelFilters.92', icon: Fuel },
+  { value: '95', labelKey: 'home.fuelFilters.95', icon: Fuel },
+  { value: 'diesel', labelKey: 'home.fuelFilters.diesel', icon: Droplets },
+  { value: 'super_diesel', labelKey: 'home.fuelFilters.super_diesel', icon: Droplets },
 ];
 
 const fuelKeyToFilter: Record<string, FuelFilter> = {
@@ -33,6 +34,7 @@ const fuelKeyToFilter: Record<string, FuelFilter> = {
 };
 
 export default function Home() {
+  const { t, locale, setLocale } = useI18n();
   const [activeFilter, setActiveFilter] = useState<FuelFilter>('all');
   const [isDark, setIsDark] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -126,12 +128,12 @@ export default function Home() {
                 <Image src="/logo.svg" alt="FullTank logo" width={28} height={28} priority className="sm:w-[34px] sm:h-[34px]" />
               </div>
               <div className="min-w-0">
-                <p className="ui-kicker hidden sm:block">Live Fuel Map</p>
+                <p className="ui-kicker hidden sm:block">{t('home.kicker')}</p>
                 <h1 className="text-[1.15rem] font-bold tracking-tight sm:mt-0.5 sm:text-[1.35rem] leading-none sm:leading-tight">
                   Full<span className="text-[var(--ui-brand)]">Tank</span>
                 </h1>
                 <p className="ui-text-muted mt-1 max-w-[18rem] text-[13px] leading-4 hidden sm:block sm:max-w-none sm:text-sm sm:leading-5">
-                  Fast community fuel updates built for quick map scanning.
+                  {t('home.tagline')}
                 </p>
               </div>
             </div>
@@ -139,15 +141,24 @@ export default function Home() {
               <button
                 onClick={() => setShowNearest(true)}
                 className="ui-button-neutral text-[var(--ui-brand)] border-[var(--ui-brand-muted)] !px-2.5 sm:!px-3.5"
-                title="Nearby sheds"
+                title={t('home.nearbyTip')}
               >
                 <Navigation size={18} className="sm:w-4 sm:h-4 shrink-0" />
-                <span className="font-semibold text-[13px] sm:text-sm">Nearby</span>
+                <span className="font-semibold text-[13px] sm:text-sm">{t('home.nearby')}</span>
               </button>
-              <Link href="/about" className="ui-button-neutral !px-2.5 sm:!px-3.5" title="About and reports">
+              <Link href="/about" className="ui-button-neutral !px-2.5 sm:!px-3.5" title={t('home.aboutTip')}>
                 <Info size={18} className="sm:w-4 sm:h-4 shrink-0" />
-                <span className="hidden sm:inline font-semibold">About</span>
+                <span className="hidden sm:inline font-semibold">{t('home.about')}</span>
               </Link>
+              <select
+                value={locale}
+                onChange={(e) => setLocale(e.target.value as 'en' | 'si')}
+                className="ui-select mr-2 hidden sm:block"
+                aria-label={t('home.languageLabel')}
+              >
+                <option value="en">{t('home.languageOptions.en')}</option>
+                <option value="si">{t('home.languageOptions.si')}</option>
+              </select>
               <button
                 type="button"
                 onClick={toggleTheme}
@@ -219,7 +230,7 @@ export default function Home() {
                       className={`ui-control-button ui-pressable relative z-10 shrink-0 flex items-center justify-center px-3 py-2 text-[11px] sm:text-sm whitespace-nowrap ${isActive ? '!bg-transparent !text-white hover:!bg-transparent hover:!text-white' : ''}`}
                     >
                       <Icon size={14} className="hidden sm:block shrink-0" />
-                      <span>{filter.label}</span>
+                      <span>{t(filter.labelKey)}</span>
                     </button>
                   );
                 })}

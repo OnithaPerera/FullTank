@@ -2,24 +2,21 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Info, X } from 'lucide-react';
-
-const legendItems = [
-  { color: 'bg-emerald-500', label: 'Green', meaning: 'Verified Available' },
-  { color: 'bg-amber-400', label: 'Yellow', meaning: 'Awaiting Confirms' },
-  { color: 'bg-red-500', label: 'Red', meaning: 'Empty / No Fuel' },
-  { color: 'bg-slate-400', label: 'Gray', meaning: 'Data > 3 hours old' },
-];
+import { useI18n } from './LanguageProvider';
 
 export default function MapLegend() {
-  const [isOpen, setIsOpen] = useState(false);
+  const { t } = useI18n();
+
+  const legendItems = [
+    { color: 'bg-emerald-500', label: t('mapLegend.color.green'), meaning: t('mapLegend.status.green') },
+    { color: 'bg-amber-400', label: t('mapLegend.color.yellow'), meaning: t('mapLegend.status.yellow') },
+    { color: 'bg-red-500', label: t('mapLegend.color.red'), meaning: t('mapLegend.status.red') },
+    { color: 'bg-slate-400', label: t('mapLegend.color.gray'), meaning: t('mapLegend.status.gray') },
+  ];
+  const [isOpen, setIsOpen] = useState(() => (typeof window !== 'undefined' && window.innerWidth >= 640));
   const legendRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Automatically open the legend on desktop screens, keep it closed on mobile
-    if (window.innerWidth >= 640) {
-      setIsOpen(true);
-    }
-
     // Close the legend if the user taps anywhere outside of it
     function handleClickOutside(event: MouseEvent | TouchEvent) {
       if (legendRef.current && !legendRef.current.contains(event.target as Node)) {
@@ -45,10 +42,10 @@ export default function MapLegend() {
         onClick={() => setIsOpen(true)}
         data-state={!isOpen ? 'open' : 'closed'}
         className="ui-panel ui-floating-surface ui-pressable ui-presence flex items-center gap-2 rounded-full px-3 py-2.5 shadow-md"
-        aria-label="Open Map Guide"
+        aria-label={t('mapLegend.open')}
       >
         <Info size={16} className="text-[var(--ui-brand)]" />
-        <span className="text-xs font-bold text-[var(--ui-text)]">Map Guide</span>
+        <span className="text-xs font-bold text-[var(--ui-text)]">{t('mapLegend.title')}</span>
       </button>
 
       {/* Expanded Panel State */}
@@ -57,15 +54,15 @@ export default function MapLegend() {
           {/* Header */}
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="ui-kicker">Map Guide</p>
-              <p className="ui-text-muted mt-0.5 text-[11px] leading-4">Station status markers.</p>
+              <p className="ui-kicker">{t('mapLegend.title')}</p>
+              <p className="ui-text-muted mt-0.5 text-[11px] leading-4">{t('mapLegend.subtitle')}</p>
             </div>
             
             {/* Mobile Close Button */}
             <button
               onClick={() => setIsOpen(false)}
               className="ui-button-icon h-7 w-7 shrink-0 sm:hidden"
-              aria-label="Close Map Guide"
+              aria-label={t('mapLegend.close')}
             >
               <X size={14} />
             </button>
@@ -90,7 +87,7 @@ export default function MapLegend() {
           {/* Informational Footer */}
           <div className="ui-panel-muted mt-2 rounded-[14px] px-2.5 py-2">
             <p className="ui-text-muted text-[10px] leading-snug">
-              <strong className="font-semibold text-[var(--ui-text)]">Note:</strong> Yellow markers require 3 separate user confirmations to turn Green.
+              <strong className="font-semibold text-[var(--ui-text)]">{t('mapLegend.title')}:</strong> {t('mapLegend.note')}
             </p>
           </div>
 
