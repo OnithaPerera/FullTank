@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Share2 } from 'lucide-react'; // Added for the share feature
 import { supabase } from '../app/lib/supabase';
 import { getRelativeTime } from '../app/lib/time';
 
@@ -17,7 +18,7 @@ type Station = {
   has_super_diesel: boolean;
   queue_length: string | null;
   confirms: number | null;
-  updated_at: string; // Added to track when the data was last submitted
+  updated_at: string; // Added for the relative time feature
 };
 
 type RankedStation = Omit<Station, 'confirms'> & {
@@ -80,6 +81,23 @@ export default function NearestSheds({ userLoc, trigger, isDark, onClose, onShow
     const timeout = window.setTimeout(() => setIsMounted(false), 180);
     return () => window.clearTimeout(timeout);
   }, [trigger]);
+
+  const handleShare = (station: RankedStation) => {
+    const mapLink = `https://www.google.com/maps/search/?api=1&query=${station.lat},${station.lng}`;
+    const text = `Fuel Alert! ⛽\nStation: ${station.name}\nStatus: ${station.queue_length || 'Check app'}\nLocation: ${mapLink}\n\nShared via FullTank.lk`;
+
+    if (navigator.share) {
+      navigator.share({
+        title: 'FullTank Fuel Update',
+        text: text,
+      }).catch(() => {
+        navigator.clipboard.writeText(text);
+      });
+    } else {
+      navigator.clipboard.writeText(text);
+      alert('Link copied to clipboard!');
+    }
+  };
 
   useEffect(() => {
     let isCancelled = false;
@@ -226,17 +244,26 @@ export default function NearestSheds({ userLoc, trigger, isDark, onClose, onShow
                     </p>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      if (selectedFuel) {
-                        onShowStation(station.lat, station.lng, selectedFuel);
-                      }
-                      onClose();
-                    }}
-                    className={`ui-pressable w-full py-2.5 rounded-lg text-sm font-bold shadow-sm ${isDark ? 'bg-blue-600 text-white hover:bg-blue-500' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
-                  >
-                    Show on Map
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        if (selectedFuel) {
+                          onShowStation(station.lat, station.lng, selectedFuel);
+                        }
+                        onClose();
+                      }}
+                      className={`ui-pressable flex-[4] py-2.5 rounded-lg text-sm font-bold shadow-sm ${isDark ? 'bg-blue-600 text-white hover:bg-blue-500' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                    >
+                      Show on Map
+                    </button>
+                    <button
+                      onClick={() => handleShare(station)}
+                      className={`ui-pressable flex-1 flex items-center justify-center rounded-lg border shadow-sm ${isDark ? 'bg-slate-700 border-slate-600 text-slate-200' : 'bg-slate-100 border-slate-200 text-slate-700'}`}
+                      title="Share station"
+                    >
+                      <Share2 size={18} />
+                    </button>
+                  </div>
 
                 </div>
               ))}
