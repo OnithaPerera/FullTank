@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '../app/lib/supabase';
+import { getRelativeTime } from '../app/lib/time';
 
 export type FuelType = 'has_92' | 'has_95' | 'has_diesel' | 'has_super_diesel';
 
@@ -16,6 +17,7 @@ type Station = {
   has_super_diesel: boolean;
   queue_length: string | null;
   confirms: number | null;
+  updated_at: string; // Added to track when the data was last submitted
 };
 
 type RankedStation = Omit<Station, 'confirms'> & {
@@ -29,7 +31,6 @@ type NearestShedsProps = {
   trigger: boolean;
   isDark: boolean;
   onClose: () => void;
-  // CHANGED: Now passes the fuel type so the main map can update its filter
   onShowStation: (lat: number, lng: number, fuel: FuelType) => void; 
 };
 
@@ -101,7 +102,6 @@ export default function NearestSheds({ userLoc, trigger, isDark, onClose, onShow
         return;
       }
 
-      // This fetches ALL stations globally, ignoring the bottom bar filter
       const { data, error } = await supabase.from('stations').select('*');
 
       if (isCancelled) return;
@@ -218,15 +218,17 @@ export default function NearestSheds({ userLoc, trigger, isDark, onClose, onShow
                     </span>
                   </div>
 
-                  <div className={`flex items-center gap-4 text-xs font-medium mb-4 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                  <div className={`flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium mb-4 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
                     <p><span className={isDark ? 'text-slate-500' : 'text-slate-500'}>Queue:</span> {station.queue_length || 'Unknown'}</p>
                     <p><span className={isDark ? 'text-slate-500' : 'text-slate-500'}>Confirms:</span> {station.confirms ?? 0}</p>
+                    <p className="text-blue-500 font-bold italic">
+                      {getRelativeTime(station.updated_at)}
+                    </p>
                   </div>
 
                   <button
                     onClick={() => {
                       if (selectedFuel) {
-                        // CHANGED: Pass the selected fuel back out
                         onShowStation(station.lat, station.lng, selectedFuel);
                       }
                       onClose();
