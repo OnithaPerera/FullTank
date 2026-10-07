@@ -7,7 +7,7 @@ const legendItems = [
   { color: 'bg-emerald-500', label: 'Green', meaning: 'Verified Available' },
   { color: 'bg-amber-400', label: 'Yellow', meaning: 'Awaiting Confirms' },
   { color: 'bg-red-500', label: 'Red', meaning: 'Empty / No Fuel' },
-  { color: 'bg-slate-400', label: 'Gray', meaning: 'Data > 3 hours old' },
+  { color: 'bg-slate-400', label: 'Gray', meaning: 'Outdated Data ( 3 hours old )' },
 ];
 
 export default function MapLegend() {
@@ -38,21 +38,23 @@ export default function MapLegend() {
   }, []);
 
   return (
-    <div ref={legendRef} className="relative flex min-h-11 flex-col items-end">
+    <div ref={legendRef} className="relative flex flex-col items-end">
       
       {/* Minimized Button State */}
-      <button
-        onClick={() => setIsOpen(true)}
-        data-state={!isOpen ? 'open' : 'closed'}
-        className="ui-panel ui-floating-surface ui-pressable ui-presence flex items-center gap-2 rounded-full px-3 py-2.5 shadow-md"
-        aria-label="Open Map Guide"
-      >
-        <Info size={16} className="text-[var(--ui-brand)]" />
-        <span className="text-xs font-bold text-[var(--ui-text)]">Map Guide</span>
-      </button>
+      {!isOpen && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="ui-panel flex items-center gap-2 rounded-full px-3 py-2.5 shadow-md transition-transform hover:scale-105 active:scale-95"
+          aria-label="Open Map Guide"
+        >
+          <Info size={16} className="text-[var(--ui-brand)]" />
+          <span className="text-xs font-bold text-[var(--ui-text)]">Map Guide</span>
+        </button>
+      )}
 
       {/* Expanded Panel State */}
-      <div data-state={isOpen ? 'open' : 'closed'} className="ui-panel ui-floating-surface ui-presence absolute right-0 top-0 w-[min(17rem,calc(100vw-1rem))] rounded-[20px] px-3.5 py-3 shadow-xl">
+      {isOpen && (
+        <div className="ui-panel w-[min(17rem,calc(100vw-1rem))] rounded-[20px] px-3.5 py-3 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
           
           {/* Header */}
           <div className="flex items-start justify-between gap-3">
@@ -95,6 +97,7 @@ export default function MapLegend() {
           </div>
 
         </div>
+      )}
     </div>
   );
 }

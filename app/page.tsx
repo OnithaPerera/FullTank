@@ -119,35 +119,55 @@ export default function Home() {
   return (
     <main className={`${isDark ? 'theme-dark' : 'theme-light'} ui-page`}>
       <div className="flex h-[100dvh] w-full flex-col overflow-hidden">
+        
+        {/* --- REFACTORED HEADER --- */}
         <header className="ui-panel flex-none rounded-none border-x-0 border-t-0 px-3.5 py-3 sm:px-4.5 sm:py-3.5">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
+            
+            {/* Left Side: Logo & Title */}
             <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
               <div className="ui-brand-mark flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] sm:h-12 sm:w-12 sm:rounded-[16px]">
                 <Image src="/logo.svg" alt="FullTank logo" width={28} height={28} priority className="sm:w-[34px] sm:h-[34px]" />
               </div>
               <div className="min-w-0">
-                <p className="ui-kicker hidden sm:block">Live Fuel Map</p>
-                <h1 className="text-[1.15rem] font-bold tracking-tight sm:mt-0.5 sm:text-[1.35rem] leading-none sm:leading-tight">
-                  Full<span className="text-[var(--ui-brand)]">Tank</span>
-                </h1>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-[1.15rem] font-bold tracking-tight sm:mt-0.5 sm:text-[1.35rem] leading-none sm:leading-tight">
+                    Full<span className="text-[var(--ui-brand)]">Tank</span>
+                  </h1>
+                  {/* Badges - Hidden on mobile to save space, flex on larger screens */}
+                  <div className="hidden lg:flex flex-wrap gap-1.5">
+                    <span className="ui-badge">Reliable community signals</span>
+                    <span className="ui-badge">Lightweight on mobile</span>
+                    <span className="ui-badge">Tap markers to confirm or update</span>
+                  </div>
+                </div>
+                {/* Hidden on mobile to prevent cramping */}
                 <p className="ui-text-muted mt-1 max-w-[18rem] text-[13px] leading-4 hidden sm:block sm:max-w-none sm:text-sm sm:leading-5">
                   Fast community fuel updates built for quick map scanning.
                 </p>
               </div>
             </div>
+
+            {/* Right Side: Actions */}
             <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-              <button
-                onClick={() => setShowNearest(true)}
+              
+              {/* Nearby Button (Combined DOM element to prevent duplicates) */}
+              <button 
+                onClick={() => setShowNearest(true)} 
                 className="ui-button-neutral text-[var(--ui-brand)] border-[var(--ui-brand-muted)] !px-2.5 sm:!px-3.5"
                 title="Nearby sheds"
               >
                 <Navigation size={18} className="sm:w-4 sm:h-4 shrink-0" />
-                <span className="font-semibold text-[13px] sm:text-sm">Nearby</span>
+                <span className="hidden sm:inline font-semibold">Nearby</span>
               </button>
+
+              {/* About Button (Combined DOM element) */}
               <Link href="/about" className="ui-button-neutral !px-2.5 sm:!px-3.5" title="About and reports">
                 <Info size={18} className="sm:w-4 sm:h-4 shrink-0" />
                 <span className="hidden sm:inline font-semibold">About</span>
               </Link>
+
+              {/* Theme Toggle */}
               <button
                 type="button"
                 onClick={toggleTheme}
@@ -156,6 +176,7 @@ export default function Home() {
               >
                 {isDark ? <SunMedium size={18} /> : <Moon size={18} />}
               </button>
+
             </div>
           </div>
           <div className="mt-2.5 hidden sm:flex flex-wrap gap-1.5">
@@ -165,11 +186,12 @@ export default function Home() {
           </div>
         </header>
 
+        {/* --- MAP AREA --- */}
         <section className="relative min-h-0 flex-1 overflow-hidden">
-          <MapBox
-            activeFilter={activeFilter}
-            isDark={isDark}
-            recenterTrigger={recenterTrigger}
+          <MapBox 
+            activeFilter={activeFilter} 
+            isDark={isDark} 
+            recenterTrigger={recenterTrigger} 
             targetLoc={targetLoc}
             targetStationId={targetStationId}
             targetTrigger={targetTrigger}
@@ -192,38 +214,27 @@ export default function Home() {
             <LocateFixed size={18} />
           </button>
 
+          {/* --- BOTTOM FILTER BAR --- */}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2000]">
-            <div className="pointer-events-auto absolute bottom-[calc(env(safe-area-inset-bottom)+0.6rem)] left-1/2 flex max-w-[96vw] -translate-x-1/2 items-center justify-start sm:justify-center gap-0.5 overflow-x-auto no-scrollbar rounded-full p-1.5 ui-dock">
-              <div className="relative flex w-full items-center gap-0.5">
-                <div
-                  className="absolute inset-y-0 left-0 z-0 rounded-full bg-[var(--ui-brand)] transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)]"
-                  style={{
-                    transform: `translateX(${pillStyle.left}px)`,
-                    width: `${pillStyle.width}px`,
-                    opacity: pillStyle.opacity,
-                  }}
-                />
-                {filterOptions.map((filter) => {
-                  const Icon = filter.icon;
-                  const isActive = activeFilter === filter.value;
+            <div className="pointer-events-auto absolute bottom-[calc(env(safe-area-inset-bottom)+0.6rem)] left-1/2 flex w-[98vw] sm:w-max -translate-x-1/2 items-center justify-between gap-0 sm:gap-1.5 rounded-full p-1 sm:p-1.5 ui-dock">
+              {filterOptions.map((filter) => {
+                const Icon = filter.icon;
+                const isActive = activeFilter === filter.value;
 
-                  return (
-                    <button
-                      ref={(node) => {
-                        filterButtonRefs.current[filter.value] = node;
-                      }}
-                      key={filter.value}
-                      type="button"
-                      onClick={() => setActiveFilter(filter.value)}
-                      aria-pressed={isActive}
-                      className={`ui-control-button ui-pressable relative z-10 shrink-0 flex items-center justify-center px-3 py-2 text-[11px] sm:text-sm whitespace-nowrap ${isActive ? '!bg-transparent !text-white hover:!bg-transparent hover:!text-white' : ''}`}
-                    >
-                      <Icon size={14} className="hidden sm:block shrink-0" />
-                      <span>{filter.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
+                return (
+                  <button
+                    key={filter.value}
+                    type="button"
+                    onClick={() => setActiveFilter(filter.value)}
+                    aria-pressed={isActive}
+                    // The ! overrides the thick padding from ui-control-button
+                    className={`ui-control-button flex-1 flex items-center justify-center !px-0.5 py-2 sm:!px-3 text-[9.5px] min-[370px]:text-[10.5px] sm:text-sm whitespace-nowrap transition-all ${isActive ? 'ui-control-button-active scale-[1.02] shadow-sm' : ''}`}
+                  >
+                    <Icon size={14} className="hidden sm:block shrink-0" />
+                    <span className="truncate">{filter.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </section>

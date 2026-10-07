@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, Moon, SunMedium, MapPin, ShieldCheck, Clock, AlertTriangle, Send, Linkedin, ChevronDown, ChevronUp} from 'lucide-react';
+import { ArrowLeft, Moon, SunMedium, MapPin, ShieldCheck, Clock, AlertTriangle, Send, Linkedin, ChevronUp } from 'lucide-react';
 
 const THEME_STORAGE_KEY = 'fulltank_theme';
 
@@ -32,6 +32,7 @@ export default function AboutPage() {
     contact: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showTeamForm, setShowTeamForm] = useState(true);
   const [isDark, setIsDark] = useState(() => {
     if (typeof window === 'undefined') return false;
     return localStorage.getItem(THEME_STORAGE_KEY) === 'dark';
@@ -141,8 +142,27 @@ export default function AboutPage() {
           </div>
         </section>
 
-        <section className="ui-enter ui-enter-delay-2 mt-6 grid gap-4 lg:grid-cols-3">
-          
+        <section className="mt-6 grid gap-4 sm:gap-6 lg:grid-cols-3 items-stretch">
+          <div className="ui-panel rounded-[28px] px-5 py-5">
+            <div className="flex items-center gap-2">
+              <MapPin className="text-[var(--ui-brand)]" size={18} />
+              <h2 className="text-lg font-semibold">Marker guide</h2>
+            </div>
+
+            <div className="mt-4 space-y-2.5">
+              {markerGuide.map((item) => (
+                <div key={item.title} className="ui-panel-muted rounded-[20px] px-3.5 py-3">
+                  <div className="flex items-start gap-3">
+                    <span className={`mt-1 h-3 w-3 shrink-0 rounded-full ${item.color}`}></span>
+                    <div>
+                      <p className="text-sm font-semibold">{item.title}</p>
+                      <p className="ui-text-muted mt-1 text-sm leading-5">{item.description}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
 
           <div className="ui-panel rounded-[28px] px-5 py-5">
             <div className="flex items-center gap-2">
@@ -194,8 +214,8 @@ export default function AboutPage() {
           </div>
         </section>
 
-        <section className="ui-enter ui-enter-delay-3 mt-6 grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(17rem,0.7fr)]">
-          <div className="ui-panel rounded-[32px] px-5 py-6 sm:px-6">
+        <section className="mt-4 sm:mt-6 grid gap-4 sm:gap-6 lg:grid-cols-3 items-start">
+          <div className="ui-panel rounded-[32px] px-5 py-6 sm:px-6 lg:col-span-2">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="ui-kicker">Reports</p>
@@ -269,7 +289,7 @@ export default function AboutPage() {
             </form>
           </div>
 
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4 sm:gap-6 lg:col-span-1">
             <div className="ui-panel rounded-[28px] px-5 py-5">
               <p className="ui-kicker">Quick Notes</p>
               <div className="mt-3 space-y-3 text-sm">
@@ -297,153 +317,100 @@ export default function AboutPage() {
           </div>
         </section>
 
-        
-      {/* Contributors Section */}
-        <section className="ui-panel ui-enter ui-enter-delay-2 mt-4 mb-8 rounded-[32px] px-5 py-6 sm:px-7 sm:py-7">
-          <h2 className="text-lg font-bold tracking-tight text-[var(--ui-text)]">
-            The Team Behind FullTank
-          </h2>
-          <p className="ui-text-muted mt-1 text-sm">
-            FullTank is an open-source initiative built and maintained by the community.
-          </p>
+        {/* Team Section */}
+        <section className="mt-6 ui-panel rounded-[32px] px-5 py-6 sm:px-7 sm:py-7">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight">The Team Behind FullTank</h2>
+          <p className="ui-text-muted mt-1 text-sm">FullTank is an open-source initiative built and maintained by the community.</p>
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {/* 1. Onitha Perera */}
-            <a 
-              href="https://www.linkedin.com/in/onitha-perera" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="group flex items-center justify-between gap-3 rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-surface-muted)] p-3 hover:bg-[var(--ui-surface-strong)] transition-all"
-            >
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="flex items-center justify-between gap-4 rounded-[20px] border border-[var(--ui-border)] bg-[var(--ui-panel-muted)] px-4 py-3">
               <div className="flex items-center gap-3">
-                <img 
-                  src="https://github.com/OnithaPerera.png" 
-                  alt="Onitha Perera" 
-                  className="h-11 w-11 rounded-full bg-slate-200 object-cover"
-                />
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-[var(--ui-text)] group-hover:underline">Onitha Perera</p>
-                  <p className="truncate text-[11px] font-bold uppercase tracking-wider text-[var(--ui-brand)]">Creator</p>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40">
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400">OP</span>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">Onitha Perera</p>
+                  <p className="text-[10px] font-bold tracking-wider text-[#d0523b]">CREATOR</p>
                 </div>
               </div>
-              <Linkedin size={18} className="shrink-0 text-[#0a66c2] opacity-80 transition-opacity group-hover:opacity-100" />
-            </a>
+              <a href="https://www.linkedin.com/in/onitha-perera" target="_blank" rel="noopener noreferrer" className="text-blue-500 transition-colors hover:text-blue-600" aria-label="Onitha Perera LinkedIn">
+                <Linkedin size={18} />
+              </a>
+            </div>
 
-            {/* 2. Suven Seoras */}
-            <a 
-              href="https://www.linkedin.com/in/suvenseoras/" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="group flex items-center justify-between gap-3 rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-surface-muted)] p-3 hover:bg-[var(--ui-surface-strong)] transition-all"
-            >
+            <div className="flex items-center justify-between gap-4 rounded-[20px] border border-[var(--ui-border)] bg-[var(--ui-panel-muted)] px-4 py-3">
               <div className="flex items-center gap-3">
-                <img 
-                  src="https://ui-avatars.com/api/?name=Suven+Seoras&background=0f172a&color=fff" 
-                  alt="Suven Seoras" 
-                  className="h-11 w-11 rounded-full bg-slate-200 object-cover"
-                />
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-[var(--ui-text)] group-hover:underline">Suven Seoras</p>
-                  <p className="truncate text-[11px] font-semibold uppercase tracking-wider text-[var(--ui-text-muted)]">Core Contributor</p>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-800 dark:bg-slate-700">
+                  <span className="font-bold text-white">SS</span>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">Suven Seoras</p>
+                  <p className="text-[10px] font-bold tracking-wider text-slate-500">CORE CONTRIBUTOR</p>
                 </div>
               </div>
-              <Linkedin size={18} className="shrink-0 text-[#0a66c2] opacity-80 transition-opacity group-hover:opacity-100" />
-            </a>
+              <a href="https://www.linkedin.com/in/suvenseoras/" target="_blank" rel="noopener noreferrer" className="text-blue-500 transition-colors hover:text-blue-600" aria-label="Suven Seoras LinkedIn">
+                <Linkedin size={18} />
+              </a>
+            </div>
 
-            {/* 3. Tharin Fernando */}
-            <a 
-              href="https://www.linkedin.com/in/tharinfernando/" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="group flex items-center justify-between gap-3 rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-surface-muted)] p-3 hover:bg-[var(--ui-surface-strong)] transition-all"
-            >
+            <div className="flex items-center justify-between gap-4 rounded-[20px] border border-[var(--ui-border)] bg-[var(--ui-panel-muted)] px-4 py-3">
               <div className="flex items-center gap-3">
-                <img 
-                  src="https://ui-avatars.com/api/?name=Tharin+Fernando&background=0f172a&color=fff" 
-                  alt="Tharin Fernando" 
-                  className="h-11 w-11 rounded-full bg-slate-200 object-cover"
-                />
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-[var(--ui-text)] group-hover:underline">Tharin Fernando</p>
-                  <p className="truncate text-[11px] font-semibold uppercase tracking-wider text-[var(--ui-text-muted)]">Core Contributor</p>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-900 dark:bg-slate-800">
+                  <span className="font-bold text-white">TF</span>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">Tharin Fernando</p>
+                  <p className="text-[10px] font-bold tracking-wider text-slate-500">CORE CONTRIBUTOR</p>
                 </div>
               </div>
-              <Linkedin size={18} className="shrink-0 text-[#0a66c2] opacity-80 transition-opacity group-hover:opacity-100" />
-            </a>
+              <a href="https://www.linkedin.com/in/tharinfernando/" target="_blank" rel="noopener noreferrer" className="text-blue-500 transition-colors hover:text-blue-600" aria-label="Tharin Fernando LinkedIn">
+                <Linkedin size={18} />
+              </a>
+            </div>
           </div>
-          
-          {/* Interactive Contribution Form */}
-          <div className="mt-6 text-center">
+
+          <div className="mt-6 flex justify-center">
             <button
-              onClick={() => setShowForm(!showForm)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--ui-border)] bg-[var(--ui-surface)] px-4 py-2 text-[13px] font-bold text-[var(--ui-text)] shadow-sm transition-all hover:bg-[var(--ui-surface-muted)] active:scale-95"
+              type="button"
+              onClick={() => setShowTeamForm(!showTeamForm)}
+              className="inline-flex items-center gap-2 rounded-full border border-[var(--ui-border)] bg-[var(--ui-panel)] px-5 py-2.5 text-sm font-semibold shadow-sm transition hover:bg-[var(--ui-panel-muted)]"
             >
               Want to join the team? Get in touch
-              {showForm ? <ChevronUp size={16} className="text-[var(--ui-brand)]" /> : <ChevronDown size={16} className="text-[var(--ui-brand)]" />}
+              <ChevronUp size={16} className={`transition-transform duration-200 ${showTeamForm ? '' : 'rotate-180'}`} />
             </button>
+          </div>
 
-            {showForm && (
-              <form 
-                action="https://formspree.io/f/mzdjwlrw" 
-                method="POST"
-                className="mt-4 animate-in fade-in slide-in-from-top-2 duration-300 text-left rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-surface-muted)] p-4 sm:p-5"
-              >
+          {showTeamForm && (
+            <div className="mt-5 rounded-[24px] border border-[var(--ui-border)] bg-[var(--ui-panel-muted)] p-5 sm:p-6">
+              <form action="https://formspree.io/f/mzdjwlrw" method="POST" className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[var(--ui-text-muted)]">Name</label>
-                    <input 
-                      type="text" 
-                      name="name"
-                      required 
-                      className="w-full rounded-xl border border-[var(--ui-border)] bg-[var(--ui-surface)] px-3.5 py-2.5 text-sm text-[var(--ui-text)] outline-none transition-colors focus:border-[var(--ui-brand)] focus:ring-1 focus:ring-[var(--ui-brand)]" 
-                      placeholder="How should we call you?" 
-                    />
+                    <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">Name</label>
+                    <input type="text" name="name" required placeholder="How should we call you?" className="ui-input w-full bg-[var(--ui-panel)]" />
                   </div>
                   <div>
-                    <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[var(--ui-text-muted)]">Email / LinkedIn</label>
-                    <input 
-                      type="text" 
-                      name="contact"
-                      required 
-                      className="w-full rounded-xl border border-[var(--ui-border)] bg-[var(--ui-surface)] px-3.5 py-2.5 text-sm text-[var(--ui-text)] outline-none transition-colors focus:border-[var(--ui-brand)] focus:ring-1 focus:ring-[var(--ui-brand)]" 
-                      placeholder="How can we reach you?" 
-                    />
+                    <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">Email / LinkedIn</label>
+                    <input type="text" name="contact" required placeholder="How can we reach you?" className="ui-input w-full bg-[var(--ui-panel)]" />
                   </div>
                 </div>
-                
-                <div className="mt-4">
-                  <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[var(--ui-text-muted)]">How would you like to help?</label>
-                  <textarea 
-                    name="message"
-                    required 
-                    rows={3} 
-                    className="w-full resize-none rounded-xl border border-[var(--ui-border)] bg-[var(--ui-surface)] px-3.5 py-2.5 text-sm text-[var(--ui-text)] outline-none transition-colors focus:border-[var(--ui-brand)] focus:ring-1 focus:ring-[var(--ui-brand)]" 
-                    placeholder="E.g., I'm a Next.js developer, or I can help verify stations in Colombo..."
-                  />
+                <div>
+                  <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">How would you like to help?</label>
+                  <textarea name="message" required rows={3} placeholder="E.g., I'm a Next.js developer, or I can help verify stations in Colombo..." className="ui-textarea w-full bg-[var(--ui-panel)]" />
                 </div>
-
-                <div className="mt-5 flex flex-col-reverse items-center justify-between gap-4 sm:flex-row">
-                  <a 
-                    href="https://github.com/OnithaPerera/FullTank" 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="text-[13px] font-semibold text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] hover:underline"
-                  >
-                    Developers: View the GitHub Repo →
+                <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+                  <a href="https://github.com/OnithaPerera/FullTank" target="_blank" rel="noopener noreferrer" className="text-sm font-semibold hover:underline">
+                    Developers: View the GitHub Repo &rarr;
                   </a>
-                  <button 
-                    type="submit" 
-                    className="w-full rounded-xl bg-[var(--ui-brand)] px-5 py-2.5 text-sm font-bold text-white shadow-md transition-opacity hover:opacity-90 sm:w-auto"
-                  >
+                  <button type="submit" className="rounded-[14px] bg-[#d0523b] px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#b84632]">
                     Send Message
                   </button>
                 </div>
               </form>
-            )}
-          </div>
+            </div>
+          )}
         </section>
 
-        <footer className="ui-enter ui-enter-delay-3 ui-text-muted mt-8 border-t border-[var(--ui-border)] pt-5 text-center text-xs">
+        <footer className="ui-text-muted mt-8 border-t border-[var(--ui-border)] pt-5 text-center text-xs">
           <p>&copy; {new Date().getFullYear()} FullTank.</p>
           <p className="mt-1">Created and maintained by <strong>FullTank Dev Team</strong>.</p>
         </footer>
