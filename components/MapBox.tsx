@@ -231,7 +231,7 @@ export default function MapBox({
     <MapContainer center={[6.8511, 79.8681]} zoom={14} style={{ height: '100%', width: '100%' }}>
       <TileLayer
         key={isDark ? 'dark' : 'light'}
-        url={isDark ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'}
+        url={isDark ? `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=${process.env.NEXT_PUBLIC_CARTO_API_KEY || ''}` : `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=${process.env.NEXT_PUBLIC_CARTO_API_KEY || ''}`}
       />
 
       <LocationCenterer userLoc={userLoc} recenterTrigger={recenterTrigger} />
