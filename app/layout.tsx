@@ -1,26 +1,23 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: "FullTank | Live Fuel Availability & Queues in Sri Lanka",
   description: "Check crowdsourced, real-time petrol and diesel availability, plus queue lengths across the Western Province, Sri Lanka.",
-  keywords: "fuel sri lanka, petrol availability colombo, diesel queue sri lanka, fulltank app, ceypetco, lioc, sinopec",
+  keywords: "fuel sri lanka, petrol availability colombo, fuel availability colombo, fuel availability sl, diesel availability sri lanka, fulltank, ceypetco, lioc, sinopec",
   openGraph: {
     title: "FullTank | Live Fuel Map",
     description: "Check crowdsourced, real-time petrol and diesel availability across Sri Lanka.",
-    url: "https://fulltank.vercel.app",
+    url: "https://fulltank.lk",
     siteName: "FullTank",
     locale: "en_LK",
     type: "website",
@@ -31,7 +28,7 @@ export const metadata: Metadata = {
     description: "Real-time, crowdsourced fuel availability and queue tracker.",
   },
   verification: {
-    google: 'S-3LACDHk6lspiAlJum5hoynIWUO80qHpgfRPtGII5w',
+    google: ['S-3LACDHk6lspiAlJum5hoynIWUO80qHpgfRPtGII5w', 'Sfk1YmMXFT_mYs6U3kLiyoliWVoH6Cqsat_J6OtK1VE']
   },
 };
 
@@ -47,7 +44,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#dc2626" />
         <link rel="apple-touch-icon" href="/icon-192x192.png" />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${inter.variable} ${inter.className} font-sans antialiased`}>
         {children}
         <Analytics />
       </body>

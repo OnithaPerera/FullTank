@@ -4,10 +4,11 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Fuel, Droplets, Moon, SunMedium, LocateFixed, Info, Navigation } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import MapLegend from '../components/MapLegend';
 import WelcomeModal from '../components/WelcomeModal';
 import NearestSheds from '../components/NearestSheds';
+import { supabase } from './lib/supabase';
 
 const MapBox = dynamic(() => import('../components/MapBox'), { ssr: false });
 
@@ -24,7 +25,6 @@ const filterOptions = [
   { value: 'super_diesel' as FuelFilter, label: 'Super Diesel', icon: Droplets },
 ];
 
-// Mapper to translate NearestSheds output to the new UI filter state
 const fuelKeyToFilter: Record<string, FuelFilter> = {
   has_92: '92',
   has_95: '95',
@@ -38,20 +38,33 @@ export default function Home() {
     if (typeof window === 'undefined') return false;
     return localStorage.getItem(THEME_STORAGE_KEY) === 'dark';
   });
-  
-  // Map control states
+
   const [recenterTrigger, setRecenterTrigger] = useState(0);
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
-  
-  // Nearby Sheds states
+
   const [showNearest, setShowNearest] = useState(false);
   const [targetLoc, setTargetLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [targetTrigger, setTargetTrigger] = useState(0);
+  const [targetStationId, setTargetStationId] = useState<string | null>(null);
 
   const [showWelcome, setShowWelcome] = useState(() => {
     if (typeof window === 'undefined') return false;
     return !localStorage.getItem(WELCOME_STORAGE_KEY);
   });
+
+  const filterButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, opacity: 0 });
+
+  useLayoutEffect(() => {
+    const activeBtn = filterButtonRefs.current[activeFilter];
+    if (activeBtn) {
+      setPillStyle({
+        left: activeBtn.offsetLeft,
+        width: activeBtn.offsetWidth,
+        opacity: 1,
+      });
+    }
+  }, [activeFilter]);
 
   useEffect(() => {
     document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
@@ -60,6 +73,30 @@ export default function Home() {
       themeMeta.setAttribute('content', isDark ? '#07111a' : '#f4efe8');
     }
   }, [isDark]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const stationId = new URLSearchParams(window.location.search).get('station')?.trim();
+    if (!stationId) return;
+
+    const fetchStationLocation = async () => {
+      const { data, error } = await supabase
+        .from('stations')
+        .select('lat, lng')
+        .eq('id', stationId)
+        .single();
+
+      if (data && !error) {
+        setActiveFilter('all');
+        setTargetStationId(stationId);
+        setTargetLoc({ lat: data.lat, lng: data.lng });
+        setTargetTrigger((prev) => prev + 1);
+      }
+    };
+
+    fetchStationLocation();
+  }, []);
 
   const toggleTheme = () => {
     const nextTheme = !isDark;
@@ -74,8 +111,9 @@ export default function Home() {
 
   const handleShowStation = (lat: number, lng: number, fuelKey: string) => {
     setTargetLoc({ lat, lng });
+    setTargetStationId(null);
     setTargetTrigger(prev => prev + 1);
-    setActiveFilter(fuelKeyToFilter[fuelKey]); 
+    setActiveFilter(fuelKeyToFilter[fuelKey]);
   };
 
   return (
@@ -91,7 +129,6 @@ export default function Home() {
               <div className="ui-brand-mark flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] sm:h-12 sm:w-12 sm:rounded-[16px]">
                 <Image src="/logo.svg" alt="FullTank logo" width={28} height={28} priority className="sm:w-[34px] sm:h-[34px]" />
               </div>
-
               <div className="min-w-0">
                 <div className="flex items-center gap-3">
                   <h1 className="text-[1.15rem] font-bold tracking-tight sm:mt-0.5 sm:text-[1.35rem] leading-none sm:leading-tight">
@@ -142,6 +179,11 @@ export default function Home() {
 
             </div>
           </div>
+          <div className="mt-2.5 hidden sm:flex flex-wrap gap-1.5">
+            <span className="ui-badge">Reliable community signals</span>
+            <span className="ui-badge">Lightweight on mobile</span>
+            <span className="ui-badge">Tap markers to confirm or update</span>
+          </div>
         </header>
 
         {/* --- MAP AREA --- */}
@@ -151,6 +193,7 @@ export default function Home() {
             isDark={isDark} 
             recenterTrigger={recenterTrigger} 
             targetLoc={targetLoc}
+            targetStationId={targetStationId}
             targetTrigger={targetTrigger}
             onUserLocChange={setUserLoc}
           />

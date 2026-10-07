@@ -25,6 +25,7 @@ const markerGuide = [
 ];
 
 export default function AboutPage() {
+  const [showForm, setShowForm] = useState(false);
   const [feedbackForm, setFeedbackForm] = useState({
     type: 'Add Station',
     message: '',
@@ -77,7 +78,7 @@ export default function AboutPage() {
   return (
     <main className={`${isDark ? 'theme-dark' : 'theme-light'} ui-page min-h-[100dvh]`}>
       <div className="mx-auto max-w-5xl px-4 pb-14 pt-[calc(env(safe-area-inset-top)+1rem)] sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between gap-3">
+        <div className="ui-enter flex items-center justify-between gap-3">
           <Link href="/" className="ui-button-neutral">
             <ArrowLeft size={16} />
             Back to Map
@@ -93,7 +94,7 @@ export default function AboutPage() {
           </button>
         </div>
 
-        <section className="ui-panel mt-4 rounded-[32px] px-5 py-6 sm:px-7 sm:py-7">
+        <section className="ui-panel ui-enter ui-enter-delay-1 mt-4 rounded-[32px] px-5 py-6 sm:px-7 sm:py-7">
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(17rem,1fr)]">
             <div>
               <div className="flex items-center gap-3">
@@ -113,12 +114,6 @@ export default function AboutPage() {
                 crowdsourced verification. The interface is designed to stay fast and readable on low-end devices
                 while keeping community updates easy to submit.
               </p>
-
-              <div className="mt-5 flex flex-wrap gap-2">
-                <span className="ui-badge">Crowdsourced updates</span>
-                <span className="ui-badge">3-user verification</span>
-                <span className="ui-badge">Queue awareness</span>
-              </div>
             </div>
 
             <div className="ui-panel-muted rounded-[26px] px-5 py-5">

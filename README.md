@@ -1,5 +1,3 @@
-# FullTank
-
 FullTank is a lightweight, mobile-first web application designed to help the community quickly find reliable fuel availability, queue estimates, and verification data. Built for speed and clarity on low-end devices, FullTank relies on crowdsourced signals to maintain accurate fuel station data.
 
 ## 🚀 Features
